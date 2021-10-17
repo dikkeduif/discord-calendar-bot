@@ -6,7 +6,7 @@
 
 This bot is a simple calendar bot, that allows you to create events for your discord group.
 
-The bot uses mongodb as its database, and nodejs for app.
+The bot uses mongodb as its database, and nodejs for the app.
 
 ![Screenshot of an event](img/screenshot.png)
 
