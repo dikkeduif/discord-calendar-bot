@@ -15,6 +15,7 @@ The features:
 - !modify <eventid> to change some of the event settings after you've created the event
 - Flexible translations
 - Docker-compose to get the bot up and running in no time
+- Set up a reminder just before the event starts
 - ...
 
 ![Screenshot of an event](img/screenshot.png)
