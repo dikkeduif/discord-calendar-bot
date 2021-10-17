@@ -34,7 +34,7 @@ You need to have docker and docker-compose installed.
 
 By default, people can create events in whatever channel the bot is in. You need to set up your own channel permissions and lock the bot down to one of those channels.
 
-Usually you want to create an #events channel or something similar and make it read only for your regular users. Event creators need to ability to write in that channel, since they have to be able to type the !event command. The bot obviously needs to be able to write and modify in the channel.
+Usually you want to create an #events channel or something similar and make it read only for your regular users. Event creators need the ability to write in that channel, since they have to be able to type the ```!event``` command. The bot obviously needs to be able to write and modify in the channel.
 
 ## Localization
 
