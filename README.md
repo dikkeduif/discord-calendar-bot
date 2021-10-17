@@ -8,6 +8,15 @@ This bot is a simple calendar bot, that allows you to create events for your dis
 
 The bot uses mongodb as its database, and nodejs for the app.
 
+The features:
+- Create events in whatever channel you want by typing !event in the channel of your choice
+- The bot recognizes first time users and asks for your timezone
+- You can choose as many registration options (reactions) as you want. By clicking on a reaction you will be registered for that option.
+- !modify <eventid> to change some of the event settings after you've created the event
+- Flexible translations
+- Docker-compose to get the bot up and running in no time
+- ...
+
 ![Screenshot of an event](img/screenshot.png)
 
 ## Installation & configuration
