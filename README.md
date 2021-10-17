@@ -21,7 +21,7 @@ The features:
 
 ## Installation & configuration
 
-You need to have docker, docker-compose, typescript and nodejs installed
+You need to have docker and docker-compose installed.
 
 1. Clone the repository
 2. Create your own discord developer app at https://discord.com/developers/applications and get your discord token 
