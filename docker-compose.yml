@@ -1,0 +1,16 @@
+version: "3.3"
+services:
+  bot:
+    build: .
+    environment:
+      - NODE_ENV
+      - DISCORD_TOKEN
+      - MONGODB_CONNECTION_STRING
+    depends_on:
+      - mongo
+  mongo:
+    image: mongo
+    volumes:
+      - ./volume:/data/db
+    ports:
+      - 27017-27019:27017-27019
