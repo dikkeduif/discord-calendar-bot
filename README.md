@@ -27,7 +27,7 @@ You need to have docker and docker-compose installed.
 1. Clone the repository
 2. Create your own discord developer app at https://discord.com/developers/applications and get your discord token, which you will need in step 3.
 3. run ```NODE_ENV=prod MONGODB_CONNECTION_STRING=mongodb://localhost:27017/calendarbot DISCORD_TOKEN=<your app token here> docker-compose up```
-4. Once the bot is up and running you can invite him to your server ```https://discord.com/oauth2/authorize?client_id=<you app client id>&permissions=355408&scope=bot```. Note: this is the client id of the app, not the token id!
+4. Once the bot is up and running you can invite it to your server ```https://discord.com/oauth2/authorize?client_id=<you app client id>&permissions=355408&scope=bot```. Note: this is the client id of the app, not the token id!
 5. Once the bot is in one of your channels you can type !event to create a new event
 
 ## Bot permissions
