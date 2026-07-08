@@ -17,7 +17,7 @@
  */
 
 import * as Discord from 'discord.js';
-import Emoji from 'node-emoji';
+import * as Emoji from 'node-emoji';
 
 export default class EmojiValidation {
   static isValidEmoji(emojiStr: string, client: Discord.Client) {
@@ -27,7 +27,7 @@ export default class EmojiValidation {
     if (emoji !== undefined) {
       return emoji.toString();
     } else {
-      if (Emoji.hasEmoji(cleanedEmoji)) {
+      if (Emoji.has(cleanedEmoji)) {
         return cleanedEmoji;
       } else {
         return false;
