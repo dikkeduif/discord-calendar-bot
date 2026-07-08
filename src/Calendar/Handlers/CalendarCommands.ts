@@ -136,7 +136,9 @@ export class CalendarCommands {
       try {
         await reaction.message.fetch();
       } catch (e) {
-        this.logger.info(e);
+        // Without the full message the handlers would act on null fields
+        Logger.error('Could not fetch partial message for reaction: ' + e.message);
+        return;
       }
     }
 
@@ -150,12 +152,13 @@ export class CalendarCommands {
       try {
         await reaction.message.fetch();
       } catch (e) {
-        this.logger.info(e);
+        Logger.error('Could not fetch partial message for reaction: ' + e.message);
+        return;
       }
     }
 
-    // Not used
-    // return this.updateRegistrations(reaction);
+    // Removal is intentionally unhandled: ReactionHandler removes the
+    // user's reaction itself after registering their choice
   }
 
   private async showHelp(message: Discord.Message) {
