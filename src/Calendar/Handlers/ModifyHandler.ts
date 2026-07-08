@@ -110,7 +110,8 @@ class ModifyHandler extends AbstractHandler {
             case EventCreationProgress.WaitingForTime:
               try {
                 const eventDate = DateValidation.validate(userInput, event.userTimeZone);
-                await EventModel.findOneAndUpdate({shortId: event.shortId},{eventDate: eventDate.toDate()});
+                // Re-arm the reminder: a rescheduled event should remind again
+                await EventModel.findOneAndUpdate({shortId: event.shortId},{eventDate: eventDate.toDate(), reminderSent: null});
                 const messageToUpdate = new Message(this.client, event.messageId);
                 event.eventDate = eventDate.toDate();
                 await messageToUpdate.updateEventMessage(event);
@@ -150,7 +151,7 @@ class ModifyHandler extends AbstractHandler {
               break;
             case EventCreationProgress.WaitingForReminder:
               if (validator.isNumeric(userInput)) {
-                await EventModel.findOneAndUpdate({shortId: event.shortId}, {reminder: parseInt(userInput, 10) });
+                await EventModel.findOneAndUpdate({shortId: event.shortId}, {reminder: parseInt(userInput, 10), reminderSent: null });
                 event.status = EventCreationProgress.Done;
               }
               break;

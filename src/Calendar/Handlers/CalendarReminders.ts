@@ -24,25 +24,58 @@ import Logger from '../../Bot/Logger';
 
 export class CalendarReminders {
 
+  public static formatChannelReminder(event: Event, userIds: string[], time: string): string {
+    const dictionary = new Dictionary(CalendarTranslations);
+    let reminderMsg = dictionary.get('/calendar/reminder/channelReminder');
+
+    reminderMsg = reminderMsg.replace('{userIds}', userIds.join(' '));
+    reminderMsg = reminderMsg.replace('{title}', event.title);
+    reminderMsg = reminderMsg.replace('{minutes}', event.reminder.toString());
+    reminderMsg = reminderMsg.replace('{date}', time);
+
+    return reminderMsg;
+  }
+
   private client: Discord.Client;
 
   constructor(client: Discord.Client) {
     this.client = client;
   }
 
-  public async eventsReminder() {
-    setInterval(() => {
-      this.getEventsForReminder();
-    }, 10000)
+  public eventsReminder() {
+    this.scheduleNextTick();
+  }
+
+  private scheduleNextTick() {
+    // Self-rescheduling: a slow tick can never overlap the next one
+    setTimeout(() => {
+      this.getEventsForReminder()
+        .catch((err) => {
+          Logger.error('Reminder tick failed: ' + err.message);
+        })
+        .finally(() => {
+          this.scheduleNextTick();
+        });
+    }, 10000);
   }
 
   private async getEventsForReminder() {
     const events = await EventModel.getForReminders();
 
     for (const index of Object.keys(events)) {
-      const event:any = events[index];
+      const event: any = events[index];
 
-      await this.sendReminder(event);
+      try {
+        await this.sendReminder(event);
+      } catch (err) {
+        // One failing event must not block the rest of the batch
+        Logger.error('Reminder failed for event ' + event.shortId + ': ' + err.message, { shortId: event.shortId });
+
+        // The channel is gone for good: stop retrying this event
+        if (err instanceof Discord.DiscordAPIError && err.code === 10003) {
+          await EventModel.findOneAndUpdate({ shortId: event.shortId }, { active: false });
+        }
+      }
     }
   }
 
@@ -64,15 +97,10 @@ export class CalendarReminders {
 
         if (userIds.length > 0) {
           const time = moment_tz(event.eventDate).tz(event.eventTimeZone).format('dddd, MMMM Do YYYY, HH:mm z');
-          const dictionary = new Dictionary(CalendarTranslations);
-          let reminderMsg = dictionary.get('/calendar/reminder/channelReminder');
+          const reminderMsg = CalendarReminders.formatChannelReminder(event, userIds, time);
 
-          reminderMsg = reminderMsg.replace('{userIds}', userIds.join(' '));
-          reminderMsg = reminderMsg.replace('{title}', event.title);
-          reminderMsg = reminderMsg.replace('{minutes}', event.reminder.toString());
-          reminderMsg = reminderMsg.replace('{date}', time);
-
-          channel.send(reminderMsg);
+          // Only mark the reminder sent once the send actually succeeded
+          await channel.send(reminderMsg);
           Logger.info('A reminder was sent for event ' + event.shortId, { shortId: event.shortId, title: event.title });
         }
 
