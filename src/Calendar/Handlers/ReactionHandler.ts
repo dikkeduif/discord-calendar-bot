@@ -37,8 +37,12 @@ export default class ReactionHandler {
     const event: Event = await EventModel.getByMessageId(reaction.message.id);
 
     if (event === null) {
-      if (reaction.message.author.id === this.client.user.id) {
-        Logger.alert('An event had to recreated in the DB');
+      // Only guild messages with an embed can be events; reactions on
+      // bot DMs or plain-text bot messages are not ours to resurrect
+      if (reaction.message.author.id === this.client.user.id
+        && reaction.message.guild !== null
+        && reaction.message.embeds.length > 0) {
+        Logger.error('An event had to recreated in the DB');
         const message = reaction.message;
         const myEmbed = reaction.message.embeds[0];
         const reactions = message.reactions;
@@ -56,24 +60,24 @@ export default class ReactionHandler {
         newEvent.description = myEmbed.description;
         newEvent.messageId = reaction.message.id;
 
-        let counter = 1;
         for (const [index, value] of reactions.cache) {
           const reactionUsers = await value.users.fetch();
           const emoji = value.emoji;
 
-          const emojiName = await EmojiValidation.isValidEmoji(emoji.name, this.client);
-          newEvent.setOption(emojiName, ' ');
+          const emojiName = EmojiValidation.isValidEmoji(emoji.name, this.client);
+          if (emojiName !== false) {
+            newEvent.setOption(emojiName, ' ');
 
-          for (const [index2, rUser] of reactionUsers) {
-            if (!rUser.bot && emojiName !== false) {
-              if (newEvent.registrations === undefined) {
-                newEvent.registrations = new Map<string, string>();
+            for (const [index2, rUser] of reactionUsers) {
+              if (!rUser.bot) {
+                if (newEvent.registrations === undefined) {
+                  newEvent.registrations = new Map<string, string>();
+                }
+
+                newEvent.registrations.set(rUser.id, emojiName)
               }
-
-              newEvent.registrations.set(rUser.id, emojiName)
             }
           }
-          counter++;
         }
 
         await EventModel.create(newEvent);
@@ -84,7 +88,7 @@ export default class ReactionHandler {
     // Get the names of the registration groups
     const options = event.options;
 
-    if (options.size === 0) {
+    if (!options || options.size === 0) {
       return 0;
     }
 
@@ -120,8 +124,19 @@ export default class ReactionHandler {
       return 0;
     }
 
-    event.registrations.set(user.id.toString(), emojiName);
-    await EventModel.findByIdAndUpdate({ _id: event._id }, event);
+    // Atomic keyed update so two simultaneous reactions cannot overwrite
+    // each other; re-use the returned document so the embed rebuild also
+    // reflects registrations written by concurrent reactions
+    const updated = await EventModel.findByIdAndUpdate(
+      event._id,
+      { $set: { ['registrations.' + user.id.toString()]: emojiName } },
+      { new: true });
+
+    if (updated && updated.registrations) {
+      event.registrations = updated.registrations;
+    } else {
+      event.registrations.set(user.id.toString(), emojiName);
+    }
 
     const columns = [];
     const registrations = [];
@@ -134,27 +149,32 @@ export default class ReactionHandler {
 
     // Key is the userid, value is the option they picked
     for (const [key, value] of event.registrations) {
-      let registeredUser = await this.client.users.cache.get(key);
+      let registeredUser = this.client.users.cache.get(key);
 
-      if (registeredUser === undefined) {
-        registeredUser = await this.client.users.fetch(key);
+      try {
+        if (registeredUser === undefined) {
+          registeredUser = await this.client.users.fetch(key);
+        }
+
+        if (registeredUser.partial) {
+          await registeredUser.fetch();
+        }
+      } catch (exception) {
+        // A deleted account must not block the embed rebuild for everyone else
+        Logger.error('Skipping unresolvable registered user ' + key + ': ' + exception.message);
+        continue;
       }
 
-      if (registeredUser.partial) {
-        await registeredUser.fetch();
-      }
-
-      if (reaction.message.guild === null) {
-        await reaction.message.guild.fetch();
-      }
-
-      let guildMember = await reaction.message.guild.member(registeredUser);
-      if (guildMember === null) {
-        try {
-          guildMember = await reaction.message.guild.members.fetch(registeredUser);
-        } catch (exception) {
-          guildMember = null;
-          Logger.error(exception);
+      let guildMember = null;
+      if (reaction.message.guild !== null) {
+        guildMember = reaction.message.guild.member(registeredUser);
+        if (guildMember === null) {
+          try {
+            guildMember = await reaction.message.guild.members.fetch(registeredUser);
+          } catch (exception) {
+            guildMember = null;
+            Logger.error(exception);
+          }
         }
       }
 

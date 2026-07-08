@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { prop, getModelForClass, ReturnModelType } from '@typegoose/typegoose';
+import { prop, getModelForClass, index, ReturnModelType } from '@typegoose/typegoose';
 import mongoose from '../../Entities/Mongoose';
 
 enum OptionsType {
@@ -25,6 +25,8 @@ enum OptionsType {
   none = 'none'
 }
 
+// Supports the reminder poll that runs every tick for the process lifetime
+@index({ active: 1, reminderSent: 1, eventDate: 1 })
 class Event {
   _id?: mongoose.Types.ObjectId;
 
@@ -54,6 +56,9 @@ class Event {
 
   @prop()
   public guildId?: string;
+
+  @prop()
+  public guildName?: string;
 
   @prop()
   public eventDate?: Date;
@@ -145,17 +150,20 @@ class Event {
   }
 
   public static async getForReminders(this: ReturnModelType<typeof Event>) {
-    const res = this.find({reminderSent: null, eventDate: { '$gte': new Date() }, active: true }).limit(10);
-    if (res) {
-      return res;
-    } else {
-      return null;
-    }
+    // Only events that can actually send may occupy the batch window,
+    // soonest first, so reminder-less events can never starve real ones
+    return this.find({
+      reminderSent: null,
+      reminder: { '$gt': 0 },
+      eventDate: { '$gte': new Date() },
+      active: true
+    }).sort({ eventDate: 1 }).limit(10);
   }
 
 
   public static async getUserEvents(this: ReturnModelType<typeof Event>, authorId: string) {
-    const res = await this.find({authorId, eventDate: { '$gte': new Date() }, active: true}).limit(5).sort({eventDate: -1});
+    // Soonest first: these are the events the user most likely wants to modify
+    const res = await this.find({authorId, eventDate: { '$gte': new Date() }, active: true}).limit(5).sort({eventDate: 1});
     if (res) {
       return res;
     } else {

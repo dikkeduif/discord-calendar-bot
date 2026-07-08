@@ -20,13 +20,14 @@ import { Event, EventModel } from '../Models/Event';
 import { User } from '../Models/User';
 import Settings from '../../settings';
 import EventCreationProgress from '../Enums/EventCreationProgress';
+import SessionType from '../Enums/SessionType';
 import { customAlphabet } from 'nanoid';
 
 export class SessionManager {
 
   // string is the authorId
   private sessions: Map<string, Event>;
-  private nanoid: any;
+  private nanoid: (size?: number) => string;
 
   constructor() {
     this.sessions = new Map<string, Event>();
@@ -46,7 +47,7 @@ export class SessionManager {
       event.guildId = guildId;
       event.authorName = username;
       event.active = true;
-      event.shortId = await this.nanoid();
+      event.shortId = this.nanoid();
       event.userTimeZone = user !== null ? user.userTimeZone : Settings.get('/defaultTimeZone');
       event.eventTimeZone = user !== null ? user.eventTimeZone : Settings.get('/defaultTimeZone');
 
@@ -65,7 +66,12 @@ export class SessionManager {
     const session = this.getSession(userId);
 
     if (session !== undefined && session !== null) {
-      await EventModel.create(session);
+      // Only a completed creation is worth persisting. Exited or timed-out
+      // sessions would become active ghost events, and modify sessions hold
+      // an already-persisted document that create() must never re-save
+      if (session.sessionType === SessionType.CREATE && session.status === EventCreationProgress.Done) {
+        await EventModel.create(session);
+      }
       this.sessions.delete(userId);
     }
   }

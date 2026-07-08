@@ -26,7 +26,6 @@ import DateValidation from '../Validation/DateValidation';
 import { SessionManager } from '../Classes/SessionManager';
 import Message from '../Classes/Message';
 import validator from 'validator';
-import isNumeric = validator.isNumeric;
 
 class ModifyHandler extends AbstractHandler {
   private client: Discord.Client
@@ -72,7 +71,6 @@ class ModifyHandler extends AbstractHandler {
         return EventCreationProgress.Exit;
       } else {
         if (parts[0] === '!modify' && parts[1] !== undefined && parts[2] !== undefined) {
-          console.log('Checking session...');
           const id = parts[1];
           const option = parts[2];
 
@@ -112,7 +110,8 @@ class ModifyHandler extends AbstractHandler {
             case EventCreationProgress.WaitingForTime:
               try {
                 const eventDate = DateValidation.validate(userInput, event.userTimeZone);
-                await EventModel.findOneAndUpdate({shortId: event.shortId},{eventDate: eventDate.toDate()});
+                // Re-arm the reminder: a rescheduled event should remind again
+                await EventModel.findOneAndUpdate({shortId: event.shortId},{eventDate: eventDate.toDate(), reminderSent: null});
                 const messageToUpdate = new Message(this.client, event.messageId);
                 event.eventDate = eventDate.toDate();
                 await messageToUpdate.updateEventMessage(event);
@@ -151,8 +150,8 @@ class ModifyHandler extends AbstractHandler {
               }
               break;
             case EventCreationProgress.WaitingForReminder:
-              if (isNumeric(userInput)) {
-                await EventModel.findOneAndUpdate({shortId: event.shortId}, {reminder: parseInt(userInput, 10) });
+              if (validator.isNumeric(userInput)) {
+                await EventModel.findOneAndUpdate({shortId: event.shortId}, {reminder: parseInt(userInput, 10), reminderSent: null });
                 event.status = EventCreationProgress.Done;
               }
               break;
@@ -164,9 +163,6 @@ class ModifyHandler extends AbstractHandler {
           }
         }
       }
-
-      console.log('displaying message');
-      console.log(event.status);
 
       if (msg.length === 0) {
         switch (event.status) {
@@ -200,8 +196,6 @@ class ModifyHandler extends AbstractHandler {
       if (msg.length) {
         await message.author.send(msg);
       }
-
-      console.log('Running modify handler');
     }
 
     return event.status;

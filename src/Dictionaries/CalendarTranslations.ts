@@ -72,8 +72,7 @@ const CalendarTranslations = {
     reminder: {
       $filter: 'lang',
       'en': {
-        channelReminder: 'Hey {userIds}, you registered for the event ``{title}`` on {date}. We\'re about to start in {minutes} minutes',
-        remind: 'Hey {username}, this is a reminder for the event **{title}** for which you registered. The event will start in **{minutes} minutes**!\n\nHere are the events details:'
+        channelReminder: 'Hey {userIds}, you registered for the event ``{title}`` on {date}. We\'re about to start in {minutes} minutes'
       }
     },
     general: {

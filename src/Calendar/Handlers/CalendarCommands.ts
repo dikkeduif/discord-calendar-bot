@@ -20,7 +20,7 @@ import * as Discord from 'discord.js';
 import { SessionManager } from '../Classes/SessionManager';
 import { Dictionary, CalendarTranslations } from '../../Dictionaries';
 import { Event } from '../Models/Event';
-import { UserModel, User } from '../Models/User';
+import { UserModel } from '../Models/User';
 import Logger from '../../Bot/Logger';
 import EventCreationProgress from '../Enums/EventCreationProgress';
 import CreateHandler from './CreateHandler';
@@ -33,7 +33,6 @@ import Settings from '../../settings';
 export class CalendarCommands {
   private client: Discord.Client;
   private sessionManager: SessionManager;
-  private logger: any;
   private dictionary: Dictionary;
   private handlers: AbstractHandler[];
   private reactionHandlers: ReactionHandler[];
@@ -50,7 +49,6 @@ export class CalendarCommands {
     this.client = client;
     this.sessionManager = new SessionManager();
     this.userTimeOuts = new Map<string, NodeJS.Timeout>();
-    this.logger = Logger;
     this.dictionary = new Dictionary(CalendarTranslations);
   }
 
@@ -62,7 +60,7 @@ export class CalendarCommands {
       // First part of the text
       const command = textParts[0];
 
-      if (command === '!help' && !message.author.bot && message.channel.type === 'dm') {
+      if (command === '!help' && message.channel.type === 'dm') {
         await this.showHelp(message);
         return true;
       }
@@ -84,14 +82,25 @@ export class CalendarCommands {
             const user = await UserModel.getUserByUserAndGuildId(message.author.id, guildId);
             event = await this.sessionManager.create(message.author.id, message.author.username, message.channel.id, guildId, handler.getSessionType(), user);
 
+            // Two rapid messages can race the session check; the second
+            // create() returns null and must not reach the handlers
+            if (event === null) {
+              await message.author.send(this.dictionary.get('/calendar/creation/alreadyHaveSession'));
+              continue;
+            }
+
             status = await handler.processMessage(message, event, this.sessionManager);
             this.timeoutSession(message.author.id);
           }
         }
       } else {
+        // Dispatch only to the handler owning this session type; running
+        // every handler let the last one overwrite the returned status
         for (const handler of this.handlers) {
-          status = await handler.processMessage(message, event, this.sessionManager);
-          this.timeoutSession(message.author.id);
+          if (handler.getSessionType() === event.sessionType) {
+            status = await handler.processMessage(message, event, this.sessionManager);
+            this.timeoutSession(message.author.id);
+          }
         }
       }
 
@@ -100,6 +109,7 @@ export class CalendarCommands {
 
         if (this.userTimeOuts.has(message.author.id)) {
           clearTimeout(this.userTimeOuts.get(message.author.id));
+          this.userTimeOuts.delete(message.author.id);
         }
       }
     }
@@ -119,12 +129,19 @@ export class CalendarCommands {
 
     const timeout = parseInt(Settings.get('/sessionTimeout'), 10) * 1000;
     const id = setTimeout((userId) => {
-      if (userId) {
+      this.userTimeOuts.delete(userId);
+
+      if (this.sessionManager.hasSession(userId)) {
+        this.sessionManager.finishSession(userId).catch((err) => {
+          Logger.error('Failed to close timed-out session: ' + err.message);
+        });
+
         this.client.users.fetch(userId).then((user) => {
           const msg = this.dictionary.get('/calendar/general/sessionEnd');
-          user.send(msg);
-        })
-        return this.sessionManager.finishSession(userId)
+          return user.send(msg);
+        }).catch((err) => {
+          Logger.error('Could not notify user of session timeout: ' + err.message);
+        });
       }
     }, timeout, authorId);
 
@@ -136,7 +153,9 @@ export class CalendarCommands {
       try {
         await reaction.message.fetch();
       } catch (e) {
-        this.logger.info(e);
+        // Without the full message the handlers would act on null fields
+        Logger.error('Could not fetch partial message for reaction: ' + e.message);
+        return;
       }
     }
 
@@ -150,12 +169,13 @@ export class CalendarCommands {
       try {
         await reaction.message.fetch();
       } catch (e) {
-        this.logger.info(e);
+        Logger.error('Could not fetch partial message for reaction: ' + e.message);
+        return;
       }
     }
 
-    // Not used
-    // return this.updateRegistrations(reaction);
+    // Removal is intentionally unhandled: ReactionHandler removes the
+    // user's reaction itself after registering their choice
   }
 
   private async showHelp(message: Discord.Message) {
