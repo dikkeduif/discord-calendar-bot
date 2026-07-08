@@ -61,9 +61,14 @@ export class CalendarReminders {
 
   private async getEventsForReminder() {
     const events = await EventModel.getForReminders();
+    const deadChannels = new Set<string>();
 
     for (const index of Object.keys(events)) {
       const event: any = events[index];
+
+      if (deadChannels.has(event.channelId)) {
+        continue;
+      }
 
       try {
         await this.sendReminder(event);
@@ -71,9 +76,15 @@ export class CalendarReminders {
         // One failing event must not block the rest of the batch
         Logger.error('Reminder failed for event ' + event.shortId + ': ' + err.message, { shortId: event.shortId });
 
-        // The channel is gone for good: stop retrying this event
+        // The channel is gone for good: retire every event that points at it
         if (err instanceof Discord.DiscordAPIError && err.code === 10003) {
-          await EventModel.findOneAndUpdate({ shortId: event.shortId }, { active: false });
+          deadChannels.add(event.channelId);
+          const result = await EventModel.updateMany(
+            { channelId: event.channelId, active: true },
+            { active: false }
+          );
+          Logger.info('Channel ' + event.channelId + ' no longer exists, deactivated '
+            + result.modifiedCount + ' event(s)', { channelId: event.channelId });
         }
       }
     }
