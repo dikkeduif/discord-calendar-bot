@@ -1,7 +1,7 @@
 ---
 title: "fix: Resolve critical crash and data-integrity issues from code review"
 type: fix
-status: active
+status: completed
 date: 2026-07-08
 origin: ce-review whole-codebase review of src/, 2026-07-08 (6 personas, 34 unique findings)
 ---
@@ -47,13 +47,13 @@ The bot runs on Node ≥15 semantics (unhandled promise rejections terminate the
 
 ### Deferred to Implementation
 
-- Exact translation copy for the "session already active" message (`alreadyHaveSession` key exists, unused) — wire it up; adjust wording only if it reads wrong in context.
-- Whether legacy DB documents contain junk from the old `finishSession` behavior worth a one-off cleanup script — inspect production data during rollout; a cleanup is additive and can ship separately.
-- Whether `getForReminders` should also bound `eventDate` by the maximum reminder window — decide once the reminder filter is in place and real data is visible.
+- Exact translation copy for the "session already active" message — **resolved: existing `alreadyHaveSession` copy wired as-is; it reads fine.**
+- Whether legacy DB documents contain junk from the old `finishSession` behavior worth a one-off cleanup script — **still open: inspect production data after deploy.** The new `reminder > 0` filter already keeps ghosts out of the reminder poll.
+- Whether `getForReminders` should also bound `eventDate` by the maximum reminder window — **resolved: not needed; the `reminder > 0` filter plus soonest-first sort keeps the window healthy. Revisit only if real data shows pressure.**
 
 ## Implementation Units
 
-- [ ] **Unit 1: Error containment layer**
+- [x] **Unit 1: Error containment layer**
 
 **Goal:** No unhandled rejection can terminate the process; startup failures are explicit.
 
@@ -74,7 +74,7 @@ The bot runs on Node ≥15 semantics (unhandled promise rejections terminate the
 
 **Verification:** boot smoke with dummy token shows containment behavior; `npm run build` green.
 
-- [ ] **Unit 2: Reaction handler hardening**
+- [x] **Unit 2: Reaction handler hardening**
 
 **Goal:** Reactions on DMs, non-event messages, option-less events, deleted users, and concurrent reactions all degrade gracefully; registrations stop losing updates.
 
@@ -96,7 +96,7 @@ The bot runs on Node ≥15 semantics (unhandled promise rejections terminate the
 
 **Verification:** manual Discord session covering the above; build green.
 
-- [ ] **Unit 3: Reminder pipeline correctness**
+- [x] **Unit 3: Reminder pipeline correctness**
 
 **Goal:** Reminders actually fire, starvation is impossible, poison events self-quarantine, and rescheduling re-arms reminders.
 
@@ -118,7 +118,7 @@ The bot runs on Node ≥15 semantics (unhandled promise rejections terminate the
 
 **Verification:** unit test for the formatter; manual reminder fire against local Mongo; build green.
 
-- [ ] **Unit 4: Session lifecycle integrity**
+- [x] **Unit 4: Session lifecycle integrity**
 
 **Goal:** Only completed CREATE sessions persist; sessions can't be double-created into null; sessions close deterministically.
 
@@ -140,7 +140,7 @@ The bot runs on Node ≥15 semantics (unhandled promise rejections terminate the
 
 **Verification:** SessionManager unit tests + manual session walk-through; build green.
 
-- [ ] **Unit 5: Testability seam and first test suite**
+- [x] **Unit 5: Testability seam and first test suite**
 
 **Goal:** Models and session code are importable without a live DB; the highest-value pure tests exist and run in CI-shape (`npm test`).
 
@@ -161,7 +161,7 @@ The bot runs on Node ≥15 semantics (unhandled promise rejections terminate the
 
 **Verification:** `npm test` runs and passes the new suites from the quoted recursive glob; boot smoke confirms the bot still connects.
 
-- [ ] **Unit 6: Input-handling correctness (UX bugs)**
+- [x] **Unit 6: Input-handling correctness (UX bugs)**
 
 **Goal:** The remaining verified P2 defects users hit in normal flows are fixed.
 
