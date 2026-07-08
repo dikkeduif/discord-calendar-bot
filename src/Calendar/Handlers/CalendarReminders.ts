@@ -25,7 +25,6 @@ import Logger from '../../Bot/Logger';
 export class CalendarReminders {
 
   private client: Discord.Client;
-  private minutes: number = 30;
 
   constructor(client: Discord.Client) {
     this.client = client;
@@ -53,8 +52,6 @@ export class CalendarReminders {
     const userIds = [];
     if (channel.type === 'text' && event.reminder && !event.reminderSent) {
 
-      const moment = moment_tz(new Date()).tz(event.eventTimeZone).format('DD-MM-yyyy HH:mm');
-
       if (event.eventDate.getTime() / 1000 - moment_tz().unix() < event.reminder * 60) {
         const regs = event.registrations;
         if (regs) {
@@ -70,7 +67,7 @@ export class CalendarReminders {
           const dictionary = new Dictionary(CalendarTranslations);
           let reminderMsg = dictionary.get('/calendar/reminder/channelReminder');
 
-          reminderMsg = reminderMsg.replace('{userIds}', userIds.join);
+          reminderMsg = reminderMsg.replace('{userIds}', userIds.join(' '));
           reminderMsg = reminderMsg.replace('{title}', event.title);
           reminderMsg = reminderMsg.replace('{minutes}', event.reminder.toString());
           reminderMsg = reminderMsg.replace('{date}', time);
@@ -82,20 +79,5 @@ export class CalendarReminders {
         await EventModel.findOneAndUpdate({shortId: event.shortId},{ reminderSent: true })
       }
     }
-  }
-
-  private sendMessage(user: Discord.User, event: any, message: Discord.Message) {
-    const dictionary = new Dictionary(CalendarTranslations);
-
-    let msg = dictionary.get('/calendar/reminder/remind');
-    msg = msg.replace('{username}', user.username);
-    msg = msg.replace('{title}', event.title);
-    msg = msg.replace('{minutes}', this.minutes.toString());
-
-    const embeds = message.embeds[0];
-
-    user.send(msg, {
-      embed: embeds
-    })
   }
 }

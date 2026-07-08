@@ -38,7 +38,7 @@ export default class ReactionHandler {
 
     if (event === null) {
       if (reaction.message.author.id === this.client.user.id) {
-        Logger.alert('An event had to recreated in the DB');
+        Logger.error('An event had to recreated in the DB');
         const message = reaction.message;
         const myEmbed = reaction.message.embeds[0];
         const reactions = message.reactions;
@@ -56,12 +56,11 @@ export default class ReactionHandler {
         newEvent.description = myEmbed.description;
         newEvent.messageId = reaction.message.id;
 
-        let counter = 1;
         for (const [index, value] of reactions.cache) {
           const reactionUsers = await value.users.fetch();
           const emoji = value.emoji;
 
-          const emojiName = await EmojiValidation.isValidEmoji(emoji.name, this.client);
+          const emojiName = EmojiValidation.isValidEmoji(emoji.name, this.client);
           newEvent.setOption(emojiName, ' ');
 
           for (const [index2, rUser] of reactionUsers) {
@@ -73,7 +72,6 @@ export default class ReactionHandler {
               newEvent.registrations.set(rUser.id, emojiName)
             }
           }
-          counter++;
         }
 
         await EventModel.create(newEvent);
@@ -84,7 +82,7 @@ export default class ReactionHandler {
     // Get the names of the registration groups
     const options = event.options;
 
-    if (options.size === 0) {
+    if (!options || options.size === 0) {
       return 0;
     }
 

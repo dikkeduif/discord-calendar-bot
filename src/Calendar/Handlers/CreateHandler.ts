@@ -106,7 +106,12 @@ class CreateHandler extends AbstractHandler {
             break;
           case EventCreationProgress.WaitingForUserTimeZone:
             if (userInput.length === 2 && userInput.toLowerCase() !== 'ok') {
-              msg = this.dictionary.get('/calendar/creation/pickOne') + '\n```' + moment_tz.tz.zonesForCountry(userInput).join('\n') + '```';
+              const zones = moment_tz.tz.zonesForCountry(userInput);
+              if (zones) {
+                msg = this.dictionary.get('/calendar/creation/pickOne') + '\n```' + zones.join('\n') + '```';
+              } else {
+                msg = this.dictionary.get('/calendar/creation/invalidTimeZone');
+              }
             } else {
               let timeZoneString = '';
               if (userInput.toLowerCase() === 'ok') {

@@ -4,7 +4,7 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "test": "mocha -r ts-node/register src/**/*test.ts",
+    "test": "mocha -r ts-node/register \"src/**/*test.ts\"",
     "lint": "tslint -c tslint.json 'src/**/*.ts'",
     "build": "npm run test && npm run lint && npm run compile",
     "compile": "tsc",

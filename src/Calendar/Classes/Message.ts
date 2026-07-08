@@ -88,7 +88,7 @@ export default class Message {
       try {
         await message.edit(embed);
       } catch (exc) {
-        Logger.alert('Unable to edit an event', { event, exception: exc });
+        Logger.error('Unable to edit an event', { event, exception: exc });
       }
     }
   }
@@ -101,7 +101,7 @@ export default class Message {
     try {
       await message.delete();
     } catch (exc) {
-      Logger.alert('Unable to delete an event', { event, exception: exc });
+      Logger.error('Unable to delete an event', { event, exception: exc });
     }
   }
 }

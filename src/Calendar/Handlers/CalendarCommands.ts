@@ -20,7 +20,7 @@ import * as Discord from 'discord.js';
 import { SessionManager } from '../Classes/SessionManager';
 import { Dictionary, CalendarTranslations } from '../../Dictionaries';
 import { Event } from '../Models/Event';
-import { UserModel, User } from '../Models/User';
+import { UserModel } from '../Models/User';
 import Logger from '../../Bot/Logger';
 import EventCreationProgress from '../Enums/EventCreationProgress';
 import CreateHandler from './CreateHandler';
@@ -62,7 +62,7 @@ export class CalendarCommands {
       // First part of the text
       const command = textParts[0];
 
-      if (command === '!help' && !message.author.bot && message.channel.type === 'dm') {
+      if (command === '!help' && message.channel.type === 'dm') {
         await this.showHelp(message);
         return true;
       }

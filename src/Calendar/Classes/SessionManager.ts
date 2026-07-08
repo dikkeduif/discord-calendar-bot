@@ -26,7 +26,7 @@ export class SessionManager {
 
   // string is the authorId
   private sessions: Map<string, Event>;
-  private nanoid: any;
+  private nanoid: (size?: number) => string;
 
   constructor() {
     this.sessions = new Map<string, Event>();
@@ -46,7 +46,7 @@ export class SessionManager {
       event.guildId = guildId;
       event.authorName = username;
       event.active = true;
-      event.shortId = await this.nanoid();
+      event.shortId = this.nanoid();
       event.userTimeZone = user !== null ? user.userTimeZone : Settings.get('/defaultTimeZone');
       event.eventTimeZone = user !== null ? user.eventTimeZone : Settings.get('/defaultTimeZone');
 

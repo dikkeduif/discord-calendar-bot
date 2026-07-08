@@ -71,7 +71,6 @@ class ModifyHandler extends AbstractHandler {
         return EventCreationProgress.Exit;
       } else {
         if (parts[0] === '!modify' && parts[1] !== undefined && parts[2] !== undefined) {
-          console.log('Checking session...');
           const id = parts[1];
           const option = parts[2];
 
@@ -164,9 +163,6 @@ class ModifyHandler extends AbstractHandler {
         }
       }
 
-      console.log('displaying message');
-      console.log(event.status);
-
       if (msg.length === 0) {
         switch (event.status) {
           case EventCreationProgress.WaitingForTime:
@@ -199,8 +195,6 @@ class ModifyHandler extends AbstractHandler {
       if (msg.length) {
         await message.author.send(msg);
       }
-
-      console.log('Running modify handler');
     }
 
     return event.status;

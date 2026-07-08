@@ -17,7 +17,6 @@
  */
 
 import { createLogger, format, transports } from 'winston';
-const { combine, splat, timestamp, printf } = format;
 const MESSAGE = Symbol.for('message');
 
 const jsonFormatter = (logEntry) => {
