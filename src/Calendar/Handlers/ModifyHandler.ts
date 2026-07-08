@@ -26,7 +26,6 @@ import DateValidation from '../Validation/DateValidation';
 import { SessionManager } from '../Classes/SessionManager';
 import Message from '../Classes/Message';
 import validator from 'validator';
-import isNumeric = validator.isNumeric;
 
 class ModifyHandler extends AbstractHandler {
   private client: Discord.Client
@@ -151,7 +150,7 @@ class ModifyHandler extends AbstractHandler {
               }
               break;
             case EventCreationProgress.WaitingForReminder:
-              if (isNumeric(userInput)) {
+              if (validator.isNumeric(userInput)) {
                 await EventModel.findOneAndUpdate({shortId: event.shortId}, {reminder: parseInt(userInput, 10) });
                 event.status = EventCreationProgress.Done;
               }
