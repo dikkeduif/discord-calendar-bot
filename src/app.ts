@@ -19,13 +19,46 @@ import * as Discord from 'discord.js';
 import { Calendar } from './Calendar'
 import Logger from './Bot/Logger';
 import Settings from './settings';
-import mongoose from './Entities/Mongoose';
+import { connect } from './Entities/Mongoose';
+
+if (!Settings.get('/discord/token')) {
+  Logger.error('DISCORD_TOKEN environment variable is not set');
+  process.exit(1);
+}
+
+if (!Settings.get('/databases/mongoose/connection')) {
+  Logger.error('MONGODB_CONNECTION_STRING environment variable is not set');
+  process.exit(1);
+}
+
+// Safety net: a failed interaction must never take the whole bot down
+process.on('unhandledRejection', (reason: any) => {
+  Logger.error('Unhandled promise rejection', { reason: reason instanceof Error ? reason.stack : reason });
+});
+
+process.on('uncaughtException', (err) => {
+  Logger.error('Uncaught exception', { stack: err.stack });
+  process.exit(1);
+});
+
+connect().catch((err) => {
+  Logger.error('MongoDB initial connection failed: ' + err.message);
+  process.exit(1);
+});
 
 const client = new Discord.Client({ partials: ['MESSAGE', 'REACTION', 'CHANNEL']});
 
 client.on('ready', () => {
   Logger.info('Discord client connected');
   Logger.info(`Found environment ${Settings.get('/environment')}`);
+});
+
+client.on('error', (err) => {
+  Logger.error('Discord client error: ' + err.message);
+});
+
+client.on('shardError', (err) => {
+  Logger.error('Discord shard error: ' + err.message);
 });
 
 const calendar = new Calendar(client);
@@ -35,6 +68,8 @@ client.on('message', message => {
   if (!message.author.bot) {
     calendar.processMessage(message).then((res) => {
       Logger.debug(res);
+    }).catch((err) => {
+      Logger.error('Message handler failed', { stack: err.stack });
     });
   }
 });
@@ -43,6 +78,8 @@ client.on('messageReactionAdd', (reaction, user) => {
   if (!user.bot) {
     calendar.reactionAdded(reaction, user).then((res) => {
       Logger.debug(res);
+    }).catch((err) => {
+      Logger.error('Reaction-add handler failed', { stack: err.stack });
     });
   }
 });
@@ -51,10 +88,15 @@ client.on('messageReactionRemove', (reaction, user) => {
   if (!user.bot) {
     calendar.reactionRemoved(reaction, user).then((res) => {
       Logger.debug(res);
+    }).catch((err) => {
+      Logger.error('Reaction-remove handler failed', { stack: err.stack });
     });
   }
 });
 
 client.login(Settings.get('/discord/token')).then((res) => {
   Logger.info(`Connecting to discord`);
+}).catch((err) => {
+  Logger.error('Discord login failed: ' + err.message);
+  process.exit(1);
 });

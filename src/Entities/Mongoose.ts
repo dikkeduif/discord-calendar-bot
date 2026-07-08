@@ -18,10 +18,25 @@
 
 import mongoose from 'mongoose';
 import settings from '../settings';
+import Logger from '../Bot/Logger';
 
 // Pin the mongoose 6 default; mongoose 7 flips this to false
 mongoose.set('strictQuery', true);
-mongoose.connect(settings.get('/databases/mongoose/connection'),
-  {
-  })
+
+mongoose.connection.on('error', (err) => {
+  Logger.error('MongoDB connection error: ' + err.message);
+});
+
+mongoose.connection.on('disconnected', () => {
+  Logger.error('MongoDB disconnected');
+});
+
+// Connecting is explicit (called from app.ts) so importing a model
+// never opens a connection; log only the error message, never the URI
+export function connect() {
+  return mongoose.connect(settings.get('/databases/mongoose/connection'),
+    {
+    })
+}
+
 export default mongoose;
