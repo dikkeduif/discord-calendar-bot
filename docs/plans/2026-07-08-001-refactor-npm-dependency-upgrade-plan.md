@@ -1,7 +1,7 @@
 ---
 title: "refactor: Update npm dependencies (except discord.js)"
 type: refactor
-status: active
+status: completed
 date: 2026-07-08
 ---
 
@@ -88,9 +88,9 @@ Deferred as "bigger changes" (same rationale the user applied to discord.js):
 
 ### Deferred to Implementation
 
-- Exact type-level fallout of typegoose 9→10 in the three model files — knowable only from `tsc` output; usage is basic (`@prop`, `getModelForClass`, `ReturnModelType`), so expected small.
-- Whether mongoose 6.0→6.13 emits a `strictQuery` deprecation warning at boot — cosmetic if so; decide whether to set the option explicitly when seen.
-- Whether `zonesForCountry` output or strict-parse behavior shifts under moment-timezone 0.6 + new tzdata — verified via smoke checklist, not predictable from the changelog.
+- Exact type-level fallout of typegoose 9→10 in the three model files — **resolved during execution: none; compiled cleanly with zero changes.**
+- Whether mongoose 6.0→6.13 emits a `strictQuery` deprecation warning at boot — **resolved: it does; pinned `mongoose.set('strictQuery', true)` in `src/Entities/Mongoose.ts` to preserve mongoose-6 behavior and silence it.**
+- Whether `zonesForCountry` output or strict-parse behavior shifts under moment-timezone 0.6 + new tzdata — **resolved: verified unchanged (`zonesForCountry('BE')`, strict `DD-MM-YYYY HH:mm` accept/reject both correct).**
 
 ## Target Versions Summary
 
@@ -116,7 +116,7 @@ Deferred as "bigger changes" (same rationale the user applied to discord.js):
 
 ## Implementation Units
 
-- [ ] **Unit 1: Reset lockfile baseline and prune dead dependencies**
+- [x] **Unit 1: Reset lockfile baseline and prune dead dependencies**
 
 **Goal:** Start from a clean, verified baseline and remove all dead dependencies plus deprecated type stubs, fixing the two known fallout points.
 
@@ -144,7 +144,7 @@ Deferred as "bigger changes" (same rationale the user applied to discord.js):
 - `npm run build` passes from a clean `node_modules` install.
 - The lockfile diff shows only real removals/additions, not format churn.
 
-- [ ] **Unit 2: In-range runtime dependency updates**
+- [x] **Unit 2: In-range runtime dependency updates**
 
 **Goal:** Take every remaining update that stays within the current major and requires no code changes: winston 3.19, confidence 5.0.1, nanoid 3.3.15, @types/validator 13.15, typescript 4.9.5.
 
@@ -170,7 +170,7 @@ Deferred as "bigger changes" (same rationale the user applied to discord.js):
 **Verification:**
 - `npm run build` passes; bot boots locally and logs output through the winston formatter.
 
-- [ ] **Unit 3: Coupled data-layer update — typegoose 10.6.0 + mongoose ~6.13.10**
+- [x] **Unit 3: Coupled data-layer update — typegoose 10.6.0 + mongoose ~6.13.10**
 
 **Goal:** Move the persistence stack to the end of the mongoose-6 line with the matching typegoose major, keeping the peer-dependency pair consistent.
 
@@ -195,7 +195,7 @@ Deferred as "bigger changes" (same rationale the user applied to discord.js):
 **Verification:**
 - `npm run build` passes; a manual event-create → reminder-fire cycle works against a local MongoDB.
 
-- [ ] **Unit 4: Small-code-impact majors — node-emoji 2, moment-timezone 0.6, dev-tooling majors**
+- [x] **Unit 4: Small-code-impact majors — node-emoji 2, moment-timezone 0.6, dev-tooling majors**
 
 **Goal:** Land the remaining majors: node-emoji 2.2.0 (one call-site rename), moment-timezone 0.6.2, ts-node 10.9.2, mocha 11.7.6, @types/mocha 10.0.10, @types/node ^22.
 
@@ -221,7 +221,7 @@ Deferred as "bigger changes" (same rationale the user applied to discord.js):
 **Verification:**
 - `npm run build` passes; emoji and date/timezone flows behave correctly in a manual bot session.
 
-- [ ] **Unit 5: package.json hygiene and end-to-end verification**
+- [x] **Unit 5: package.json hygiene and end-to-end verification**
 
 **Goal:** Split dev-only packages into `devDependencies`, then prove the whole upgrade end to end: clean install, Docker image build, boot, and the manual smoke checklist.
 
