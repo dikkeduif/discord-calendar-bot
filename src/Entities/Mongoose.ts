@@ -19,6 +19,8 @@
 import mongoose from 'mongoose';
 import settings from '../settings';
 
+// Pin the mongoose 6 default; mongoose 7 flips this to false
+mongoose.set('strictQuery', true);
 mongoose.connect(settings.get('/databases/mongoose/connection'),
   {
   })
