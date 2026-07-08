@@ -38,7 +38,7 @@ export default class DateValidation {
     if (!DateValidation.isValidTime(timePart)) {
       throw new InvalidTime()
     }
-    const eventDate = moment.tz(dateString, 'DD-MM-YYYY HH:mm', timeZoneString);
+    const eventDate = moment.tz(dateString, 'DD-MM-YYYY HH:mm', true, timeZoneString);
     if (eventDate.isValid()) {
       if (eventDate.unix() > moment().unix()) {
         return eventDate;
@@ -51,7 +51,7 @@ export default class DateValidation {
   }
 
   static isValidTime(timeString) {
-    if (timeString.match(/([01]?[0-9]|2[0-3]):[0-5][0-9]/)) {
+    if (timeString.match(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)) {
       return true;
     }
 
