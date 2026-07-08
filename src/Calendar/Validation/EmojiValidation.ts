@@ -21,6 +21,13 @@ import * as Emoji from 'node-emoji';
 
 export default class EmojiValidation {
   static isValidEmoji(emojiStr: string, client: Discord.Client) {
+    // Custom server emoji arrive as <:name:id> (or <a:name:id> when animated)
+    const customEmoji = emojiStr.match(/^<a?:\w+:(\d+)>$/);
+    if (customEmoji) {
+      const emojiById = client.emojis.cache.get(customEmoji[1]);
+      return emojiById !== undefined ? emojiById.toString() : false;
+    }
+
     const cleanedEmoji = emojiStr.replace(/:/g, '');
     const emoji = client.emojis.cache.find(emo => emo.name === cleanedEmoji);
 

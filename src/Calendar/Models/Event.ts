@@ -58,6 +58,9 @@ class Event {
   public guildId?: string;
 
   @prop()
+  public guildName?: string;
+
+  @prop()
   public eventDate?: Date;
 
   @prop()
@@ -159,7 +162,8 @@ class Event {
 
 
   public static async getUserEvents(this: ReturnModelType<typeof Event>, authorId: string) {
-    const res = await this.find({authorId, eventDate: { '$gte': new Date() }, active: true}).limit(5).sort({eventDate: -1});
+    // Soonest first: these are the events the user most likely wants to modify
+    const res = await this.find({authorId, eventDate: { '$gte': new Date() }, active: true}).limit(5).sort({eventDate: 1});
     if (res) {
       return res;
     } else {

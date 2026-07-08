@@ -75,6 +75,12 @@ class CreateHandler extends AbstractHandler {
 
       Logger.info(`Processing !event command on channelId ${message.channel.id} ${message.channel.type}`, { channel: message.channel })
 
+      // The follow-up conversation happens in DMs where message.guild is
+      // null; remember the guild name while we still have it
+      if (message.guild) {
+        event.guildName = message.guild.name;
+      }
+
       if (userInput === '!exit') {
         event.status = EventCreationProgress.Exit;
       } else if (userInput !== '!event') {
@@ -139,7 +145,9 @@ class CreateHandler extends AbstractHandler {
                 newUser.eventTimeZone = event.eventTimeZone;
                 await new UserModel(newUser).save();
               } else {
-                await UserModel.findOneAndUpdate({ userId: message.author.id }, { userTimeZone: event.userTimeZone });
+                // User records are per (userId, guildId); without the guild
+                // filter this updated an arbitrary guild's record
+                await UserModel.findOneAndUpdate({ userId: message.author.id, guildId: event.guildId }, { userTimeZone: event.userTimeZone });
               }
 
               event.status = EventCreationProgress.WaitingForDate;
@@ -270,7 +278,7 @@ class CreateHandler extends AbstractHandler {
           case EventCreationProgress.WaitingForFirstTimeUser:
             msg = this.dictionary.get('/calendar/creation/firstTimeUser');
             msg = msg.replace('{username}', message.author.username);
-            msg = msg.replace('{guildname}', message.guild.name);
+            msg = msg.replace('{guildname}', message.guild ? message.guild.name : event.guildName);
             break;
           case EventCreationProgress.WaitingForTitle:
             msg = this.dictionary.get('/calendar/creation/eventTitle');
