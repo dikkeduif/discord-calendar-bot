@@ -39,6 +39,8 @@ const settings = {
     bind: process.env.ADMIN_BIND,
     // 'false' only for trusted-LAN plain-HTTP setups; see README tiers
     secureCookies: process.env.ADMIN_COOKIE_SECURE,
+    // 'true' when a TLS reverse proxy fronts the dashboard (tier 3)
+    trustProxy: process.env.ADMIN_TRUST_PROXY,
   },
 };
 

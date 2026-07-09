@@ -103,6 +103,14 @@ export default class DashboardServer {
   private configure() {
     this.app.disable('x-powered-by');
 
+    // Behind a TLS reverse proxy (tier 3) every client shares the
+    // proxy's socket address — the per-IP login throttle would become a
+    // global lockout any scanner could trigger. Opt in to the forwarded
+    // address only when a proxy is actually in front
+    if (Settings.get('/dashboard/trustProxy') === 'true') {
+      this.app.set('trust proxy', 1);
+    }
+
     this.app.use((req, res, next) => {
       // style-src allows the layout's inline <style>; scripts stay
       // locked to 'self' (and the pages ship none)
@@ -140,7 +148,9 @@ export default class DashboardServer {
         return;
       }
 
-      const token = req.body !== undefined ? req.body.token : undefined;
+      // Duplicated form fields arrive as arrays; anything non-string is
+      // a failed login, not a 500
+      const token = req.body !== undefined && typeof req.body.token === 'string' ? req.body.token : undefined;
       if (!this.auth.verifyToken(token)) {
         Logger.error('Dashboard login failed', { ip: req.ip });
         res.status(401).send(DashboardServer.loginPage(true));

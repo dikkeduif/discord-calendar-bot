@@ -93,8 +93,11 @@ export class CalendarReminders {
 
   private async sendReminder(event: Event) {
     // Race safety net: detached events are already inactive, but a tick
-    // loaded before the detach landed must not ping the channel
+    // loaded before the detach landed must not ping the channel. Heal
+    // the blocked-but-active state (a detach whose deactivation failed
+    // mid-way) so such events cannot occupy the batch window forever
     if (ChannelStateCache.isBlocked(event.channelId)) {
+      await EventModel.updateMany({ channelId: event.channelId, active: true }, { active: false });
       return;
     }
 

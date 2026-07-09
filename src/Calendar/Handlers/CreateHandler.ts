@@ -281,8 +281,14 @@ class CreateHandler extends AbstractHandler {
             msg = this.dictionary.get('/calendar/creation/exit');
             break;
           case EventCreationProgress.Done:
-            msg = this.dictionary.get('/calendar/creation/done');
-            msg = msg.replace(/\{id\}/g, event.shortId);
+            // The post chokepoint deactivates events whose channel was
+            // detached mid-interview; "done, your id is X" would be a lie
+            if (event.active === false) {
+              msg = this.dictionary.get('/calendar/creation/channelDetached');
+            } else {
+              msg = this.dictionary.get('/calendar/creation/done');
+              msg = msg.replace(/\{id\}/g, event.shortId);
+            }
             break;
           case EventCreationProgress.WaitingForFirstTimeUser:
             msg = this.dictionary.get('/calendar/creation/firstTimeUser');

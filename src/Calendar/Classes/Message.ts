@@ -132,6 +132,12 @@ export default class Message {
       channel = await this.client.channels.fetch(event.channelId) as Discord.TextChannel;
     } catch (exc) {
       Logger.error('Unable to delete an event', { event, exception: exc });
+      // The channel may be gone while the guild is not: the native
+      // mirror is guild-scoped and must not outlive the event
+      const guild = event.guildId ? this.client.guilds.cache.get(event.guildId) : undefined;
+      if (guild !== undefined) {
+        await new ScheduledEvent().delete(event, guild);
+      }
       return;
     }
 

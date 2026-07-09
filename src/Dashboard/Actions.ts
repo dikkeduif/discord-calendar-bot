@@ -130,6 +130,20 @@ export function registerDashboardActions(app: express.Express, client: Discord.C
       res.redirect('/drift');
       return;
     }
+
+    // The drift report can be stale; quarantining is irreversible for
+    // the channel's events, so re-verify the channel is actually dead
+    try {
+      await client.channels.fetch(req.params.channelId);
+      res.redirect('/drift?msg=' + encodeURIComponent('That channel exists — re-run the scan before cleaning up'));
+      return;
+    } catch (err) {
+      if (!(err instanceof Discord.DiscordAPIError && err.code === Discord.RESTJSONErrorCodes.UnknownChannel)) {
+        res.redirect('/drift?msg=' + encodeURIComponent('Could not verify the channel — nothing changed'));
+        return;
+      }
+    }
+
     const outcome = await actions().quarantineChannel(req.params.channelId, undefined);
     audit('quarantineChannel', req.params.channelId, outcome);
     res.redirect('/drift?msg=' + encodeURIComponent('Channel quarantined — closed ' + (outcome.deactivated ?? 0) + ' event(s)'));

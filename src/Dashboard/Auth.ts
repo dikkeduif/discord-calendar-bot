@@ -75,6 +75,16 @@ export default class Auth {
    * internet scanner must not be able to lock the owner out.
    */
   public registerAttempt(ip: string, now: number = Date.now()): boolean {
+    // A public port collects one entry per scanning source address;
+    // sweep expired windows so the map cannot grow for the process life
+    if (this.attempts.size > 10_000) {
+      for (const [key, value] of this.attempts) {
+        if (now - value.windowStart >= this.windowMs) {
+          this.attempts.delete(key);
+        }
+      }
+    }
+
     const entry = this.attempts.get(ip);
 
     if (entry === undefined || now - entry.windowStart >= this.windowMs) {

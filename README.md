@@ -57,7 +57,7 @@ Then map the port in ``docker-compose.yml`` (a commented example is included). S
 
 1. **Localhost only (default example)**: keep the mapping on ``127.0.0.1`` and reach it from the box or an SSH tunnel. Safest.
 2. **Phone access (recommended)**: keep the localhost binding and join the machine to a [Tailscale](https://tailscale.com)/WireGuard network; open the dashboard over the tailnet.
-3. **Public internet**: put a TLS reverse proxy (e.g. [Caddy](https://caddyserver.com), 2-line config) in front. **Never expose the raw HTTP port publicly** — the token and cookie would travel in plaintext. Set ``ADMIN_COOKIE_SECURE=false`` only for tier-1 plain-HTTP setups on a trusted LAN.
+3. **Public internet**: put a TLS reverse proxy (e.g. [Caddy](https://caddyserver.com), 2-line config) in front and set ``ADMIN_TRUST_PROXY=true`` — otherwise every visitor shares the proxy's address and any scanner's failed logins would throttle *you* out. **Never expose the raw HTTP port publicly** — the token and cookie would travel in plaintext. Set ``ADMIN_COOKIE_SECURE=false`` only for tier-1 plain-HTTP setups on a trusted LAN.
 
 ## Localization
 
