@@ -20,6 +20,7 @@ import { Event } from '../Models/Event';
 import * as Discord from 'discord.js';
 import moment_tz from 'moment-timezone';
 import Logger from '../../Bot/Logger';
+import ScheduledEvent from './ScheduledEvent';
 
 export default class Message {
   private messageId: string;
@@ -59,6 +60,10 @@ export default class Message {
           await result.react(emojiName);
         }
       }
+
+      // Mirror as a native scheduled event (Events tab + Discord's own
+      // start notification); the id persists with the session document
+      await new ScheduledEvent().create(event, channel);
     } catch (exc) {
       Logger.error('Unable to post a new event', { event, exception: exc });
     }
@@ -86,6 +91,8 @@ export default class Message {
           .setFooter({ text: 'created by ' + event.authorName + ', your event id is [ ' + event.shortId + ' ]' });
 
         await message.edit({ embeds: [rebuilt] });
+
+        await new ScheduledEvent().update(event, channel);
       }
     } catch (exc) {
       Logger.error('Unable to edit an event', { event, exception: exc });
@@ -98,6 +105,8 @@ export default class Message {
 
       const message = await channel.messages.fetch(event.messageId)
       await message.delete();
+
+      await new ScheduledEvent().delete(event, channel);
     } catch (exc) {
       Logger.error('Unable to delete an event', { event, exception: exc });
     }
