@@ -18,6 +18,7 @@
 
 import { CalendarCommands} from './Handlers/CalendarCommands';
 import { CalendarReminders} from './Handlers/CalendarReminders';
+import InteractionRouter from './Interactions/InteractionRouter';
 import * as Discord from 'discord.js';
 import Logger from '../Bot/Logger';
 
@@ -25,10 +26,20 @@ export class Calendar {
 
   private handler: CalendarCommands;
   private reminders: CalendarReminders;
+  private interactions: InteractionRouter;
 
   constructor(client: Discord.Client) {
     this.handler = new CalendarCommands(client);
     this.reminders = new CalendarReminders(client);
+    this.interactions = new InteractionRouter(client);
+  }
+
+  public async registerCommands() {
+    return this.interactions.registerCommands();
+  }
+
+  public async handleInteraction(interaction: Discord.Interaction) {
+    return this.interactions.route(interaction);
   }
 
   public async reactionAdded(reaction: Discord.MessageReaction | Discord.PartialMessageReaction, user: Discord.User | Discord.PartialUser) {

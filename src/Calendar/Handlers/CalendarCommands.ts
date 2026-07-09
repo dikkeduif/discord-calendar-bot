@@ -67,6 +67,8 @@ export class CalendarCommands {
       const command = textParts[0];
 
       if (command === '!help' && message.channel.isDMBased()) {
+        // Telemetry marker for the prefix-retirement gate
+        Logger.info('Prefix command used', { command });
         await this.showHelp(message);
         return true;
       }
@@ -94,6 +96,13 @@ export class CalendarCommands {
               await message.author.send(this.dictionary.get('/calendar/creation/alreadyHaveSession'));
               continue;
             }
+
+            // Telemetry marker for the prefix-retirement gate, and one
+            // nudge per session toward the slash surface
+            Logger.info('Prefix command used', { command });
+            message.author.send(this.dictionary.get('/calendar/general/deprecationNudge')).catch((err) => {
+              Logger.debug('Could not send deprecation nudge: ' + err.message);
+            });
 
             status = await handler.processMessage(message, event, this.sessionManager);
             this.timeoutSession(message.author.id);
