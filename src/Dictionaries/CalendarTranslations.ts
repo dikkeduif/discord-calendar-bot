@@ -69,6 +69,12 @@ const CalendarTranslations = {
         exiting: 'Exiting'
       }
     },
+    interaction: {
+      $filter: 'lang',
+      'en': {
+        error: 'Something went wrong while handling that. Please try again.',
+      },
+    },
     scheduledEvent: {
       $filter: 'lang',
       'en': {
