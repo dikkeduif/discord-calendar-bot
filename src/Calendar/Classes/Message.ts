@@ -21,6 +21,8 @@ import * as Discord from 'discord.js';
 import moment_tz from 'moment-timezone';
 import Logger from '../../Bot/Logger';
 import ScheduledEvent from './ScheduledEvent';
+import RegistrationRenderer from './RegistrationRenderer';
+import RegistrationButtonHandler from '../Interactions/RegistrationButtonHandler';
 
 export default class Message {
   private messageId: string;
@@ -40,6 +42,10 @@ export default class Message {
     // 20201213T230000
     description += '\n\n**Time**\n' + '<t:' + newDateServer + ':F> (<t:' + newDateServer + ':R>)';
 
+    // Every new event registers via buttons, whichever surface created
+    // it; the legacy reaction path only serves messages posted before this
+    event.registrationSurface = 'buttons';
+
     const embed = new Discord.EmbedBuilder()
       .setColor('#f8d040')
       .setTitle(title)
@@ -47,19 +53,20 @@ export default class Message {
       .setTimestamp()
       .setFooter({ text: 'created by ' + event.authorName + ', your event id is [ ' + event.shortId + ' ]' });
 
+    if (event.hasOptions()) {
+      // Empty columns render at post time so the embed shape is stable
+      // from the first click onwards
+      embed.setFields(RegistrationRenderer.buildFields(event.options, new Map()));
+    }
+
     try {
       const channel = await this.client.channels.fetch(event.channelId) as Discord.TextChannel;
-      const result: Discord.Message = await channel.send({ embeds: [embed] });
+      const result: Discord.Message = await channel.send({
+        embeds: [embed],
+        components: RegistrationButtonHandler.buildButtonRows(event),
+      });
 
       event.messageId = result.id;
-      const options = event.options;
-
-      if (options) {
-        for (const [key] of options) {
-          const emojiName: string = key;
-          await result.react(emojiName);
-        }
-      }
 
       // Mirror as a native scheduled event (Events tab + Discord's own
       // start notification); the id persists with the session document

@@ -21,6 +21,7 @@ import Logger from '../../Bot/Logger';
 import { Dictionary, CalendarTranslations } from '../../Dictionaries';
 import { buildCommandDefinitions } from './CommandDefinitions';
 import HelpCommand from './HelpCommand';
+import RegistrationButtonHandler from './RegistrationButtonHandler';
 
 export default class InteractionRouter {
   /**
@@ -39,11 +40,13 @@ export default class InteractionRouter {
   private client: Discord.Client;
   private dictionary: Dictionary;
   private helpCommand: HelpCommand;
+  private registrationButtons: RegistrationButtonHandler;
 
   constructor(client: Discord.Client) {
     this.client = client;
     this.dictionary = new Dictionary(CalendarTranslations);
     this.helpCommand = new HelpCommand();
+    this.registrationButtons = new RegistrationButtonHandler();
   }
 
   /**
@@ -115,6 +118,12 @@ export default class InteractionRouter {
 
   private async routeButton(interaction: Discord.ButtonInteraction) {
     const namespace = InteractionRouter.matchNamespace(interaction.customId);
+
+    if (namespace === 'ev:reg') {
+      await this.registrationButtons.execute(interaction);
+      return;
+    }
+
     // Unknown namespaces are ignored quietly: buttons from older bot
     // versions may live on messages forever
     Logger.debug('Unrouted button: ' + namespace);

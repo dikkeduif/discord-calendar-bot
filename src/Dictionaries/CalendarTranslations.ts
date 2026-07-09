@@ -73,6 +73,7 @@ const CalendarTranslations = {
       $filter: 'lang',
       'en': {
         error: 'Something went wrong while handling that. Please try again.',
+        registrationClosed: 'Registration for this event is closed.',
       },
     },
     scheduledEvent: {
