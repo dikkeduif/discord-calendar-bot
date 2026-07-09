@@ -19,7 +19,7 @@
   "dependencies": {
     "@typegoose/typegoose": "^10.6.0",
     "confidence": "^5.0.1",
-    "discord.js": "^12.5.1",
+    "discord.js": "^14.26.4",
     "moment-timezone": "^0.6.2",
     "mongoose": "~6.13.10",
     "nanoid": "^3.3.15",

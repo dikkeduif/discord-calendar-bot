@@ -39,16 +39,16 @@ export default class Message {
     // 20201213T230000
     description += '\n\n**Time**\n' + '<t:' + newDateServer + ':F> (<t:' + newDateServer + ':R>)';
 
-    const embed: any = new Discord.MessageEmbed()
+    const embed = new Discord.EmbedBuilder()
       .setColor('#f8d040')
       .setTitle(title)
       .setDescription(description)
       .setTimestamp()
-      .setFooter('created by ' + event.authorName + ', your event id is [ ' + event.shortId + ' ]');
+      .setFooter({ text: 'created by ' + event.authorName + ', your event id is [ ' + event.shortId + ' ]' });
 
     try {
-      const channel: any = await this.client.channels.fetch(event.channelId);
-      const result: Discord.Message = await channel.send(embed);
+      const channel = await this.client.channels.fetch(event.channelId) as Discord.TextChannel;
+      const result: Discord.Message = await channel.send({ embeds: [embed] });
 
       event.messageId = result.id;
       const options = event.options;
@@ -66,8 +66,7 @@ export default class Message {
 
   public async updateEventMessage(event: Event) {
     try {
-      // @ts-ignore
-      const channel: Discord.TextChannel = await this.client.channels.fetch(event.channelId);
+      const channel = await this.client.channels.fetch(event.channelId) as Discord.TextChannel;
 
       const message = await channel.messages.fetch(event.messageId);
       const embed = message.embeds[0];
@@ -78,14 +77,15 @@ export default class Message {
         // 20201213T230000
         description += '\n\n**Time**\n' + '<t:' + newDateServer + ':F> (<t:' + newDateServer + ':R>)';
 
-        embed
+        // Received embeds are read-only data in v14; rebuild to mutate
+        const rebuilt = Discord.EmbedBuilder.from(embed)
           .setColor('#f8d040')
           .setTitle(event.title)
           .setDescription(description)
           .setTimestamp()
-          .setFooter('created by ' + event.authorName + ', your event id is [ ' + event.shortId + ' ]');
+          .setFooter({ text: 'created by ' + event.authorName + ', your event id is [ ' + event.shortId + ' ]' });
 
-        await message.edit(embed);
+        await message.edit({ embeds: [rebuilt] });
       }
     } catch (exc) {
       Logger.error('Unable to edit an event', { event, exception: exc });
@@ -94,8 +94,7 @@ export default class Message {
 
   public async delete(event: Event) {
     try {
-      // @ts-ignore
-      const channel: Discord.TextChannel = await this.client.channels.fetch(event.channelId);
+      const channel = await this.client.channels.fetch(event.channelId) as Discord.TextChannel;
 
       const message = await channel.messages.fetch(event.messageId)
       await message.delete();

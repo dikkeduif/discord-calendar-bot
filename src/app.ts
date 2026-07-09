@@ -46,9 +46,23 @@ connect().catch((err) => {
   process.exit(1);
 });
 
-const client = new Discord.Client({ partials: ['MESSAGE', 'REACTION', 'CHANNEL']});
+const client = new Discord.Client({
+  intents: [
+    Discord.GatewayIntentBits.Guilds,
+    Discord.GatewayIntentBits.GuildMessages,
+    // Privileged: must also be toggled in the Developer Portal, or login
+    // fails with DisallowedIntents
+    Discord.GatewayIntentBits.MessageContent,
+    Discord.GatewayIntentBits.GuildMessageReactions,
+    Discord.GatewayIntentBits.DirectMessages,
+  ],
+  partials: [Discord.Partials.Message, Discord.Partials.Channel, Discord.Partials.Reaction],
+  // Reminders ping registrants via user mentions; everyone/here/roles
+  // never parse, so quoted user input cannot mass-mention
+  allowedMentions: { parse: ['users'] },
+});
 
-client.on('ready', () => {
+client.on('clientReady', () => {
   Logger.info('Discord client connected');
   Logger.info(`Found environment ${Settings.get('/environment')}`);
 });
@@ -64,7 +78,7 @@ client.on('shardError', (err) => {
 const calendar = new Calendar(client);
 calendar.start();
 
-client.on('message', message => {
+client.on('messageCreate', message => {
   if (!message.author.bot) {
     calendar.processMessage(message).then((res) => {
       Logger.debug(res);

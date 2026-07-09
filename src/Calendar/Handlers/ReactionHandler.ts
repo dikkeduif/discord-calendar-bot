@@ -32,7 +32,7 @@ export default class ReactionHandler {
     this.dictionary = new Dictionary(CalendarTranslations);
   }
 
-  public async processMessage(reaction: Discord.MessageReaction, user: Discord.User | Discord.PartialUser): Promise<number> {
+  public async processMessage(reaction: Discord.MessageReaction | Discord.PartialMessageReaction, user: Discord.User | Discord.PartialUser): Promise<number> {
 
     const event: Event = await EventModel.getByMessageId(reaction.message.id);
 
@@ -97,8 +97,7 @@ export default class ReactionHandler {
       await reaction.users.remove(user.id);
     } catch (exception) {
       const author = await this.client.users.fetch(event.authorId);
-      // @ts-ignore
-      const channel: Discord.TextChannel = await this.client.channels.fetch(event.channelId);
+      const channel = await this.client.channels.fetch(event.channelId) as Discord.TextChannel;
       let msg = this.dictionary.get('/calendar/creation/reactionPermissions');
       msg = msg.replace('{event}', event.title).replace('{channel}', channel.name);
       await author.send(msg);
@@ -167,7 +166,7 @@ export default class ReactionHandler {
 
       let guildMember = null;
       if (reaction.message.guild !== null) {
-        guildMember = reaction.message.guild.member(registeredUser);
+        guildMember = reaction.message.guild.members.cache.get(registeredUser.id) ?? null;
         if (guildMember === null) {
           try {
             guildMember = await reaction.message.guild.members.fetch(registeredUser);
@@ -192,18 +191,22 @@ export default class ReactionHandler {
       registrations[value].push(nickname);
     }
 
-    const embed = reaction.message.embeds[0];
-    embed.fields = [];
+    const fields: Discord.APIEmbedField[] = [];
     for (const key of Object.keys(columns)) {
       const value = columns[key];
       if (registrations[key].length !== 0) {
-        embed.addField(value, '>>> ' + registrations[key].join('\n'), true);
+        fields.push({ name: value, value: '>>> ' + registrations[key].join('\n'), inline: true });
       } else {
-        embed.addField(value, '-', true);
+        fields.push({ name: value, value: '-', inline: true });
       }
     }
 
-    await reaction.message.edit(embed);
+    // Received embeds are read-only data in v14. Rebuild with setFields:
+    // from() copies the existing fields, so addFields would duplicate the
+    // columns on every reaction until the 25-field limit throws
+    const embed = Discord.EmbedBuilder.from(reaction.message.embeds[0]).setFields(fields);
+
+    await reaction.message.edit({ embeds: [embed] });
 
     return 1;
   }

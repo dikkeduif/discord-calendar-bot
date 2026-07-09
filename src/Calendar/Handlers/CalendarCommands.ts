@@ -55,12 +55,18 @@ export class CalendarCommands {
   public async processMessage(message: Discord.Message) {
     // Only process if message is not coming from a bot
     if (!message.author.bot) {
+      // DM channels arrive partial (Partials.Channel); routing needs the
+      // real channel type
+      if (message.channel.partial) {
+        await message.channel.fetch();
+      }
+
       const textParts = message.content.split(' ');
 
       // First part of the text
       const command = textParts[0];
 
-      if (command === '!help' && message.channel.type === 'dm') {
+      if (command === '!help' && message.channel.isDMBased()) {
         await this.showHelp(message);
         return true;
       }
@@ -148,7 +154,7 @@ export class CalendarCommands {
     this.userTimeOuts.set(authorId, id);
   }
 
-  public async reactionAdded(reaction: Discord.MessageReaction, user: Discord.User | Discord.PartialUser) {
+  public async reactionAdded(reaction: Discord.MessageReaction | Discord.PartialMessageReaction, user: Discord.User | Discord.PartialUser) {
     if (reaction.message.partial) {
       try {
         await reaction.message.fetch();
@@ -164,7 +170,7 @@ export class CalendarCommands {
     }
   }
 
-  public async reactionRemoved(reaction: Discord.MessageReaction, user: Discord.User | Discord.PartialUser) {
+  public async reactionRemoved(reaction: Discord.MessageReaction | Discord.PartialMessageReaction, user: Discord.User | Discord.PartialUser) {
     if (reaction.message.partial) {
       try {
         await reaction.message.fetch();

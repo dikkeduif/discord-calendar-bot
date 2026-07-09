@@ -31,7 +31,7 @@ class ModifyHandler extends AbstractHandler {
   private client: Discord.Client
 
   public constructor(client: Discord.Client) {
-    super('!modify', ['dm'], SessionType.MODIFY)
+    super('!modify', [Discord.ChannelType.DM], SessionType.MODIFY)
     this.client = client;
   }
 

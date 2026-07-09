@@ -33,7 +33,7 @@ class CreateHandler extends AbstractHandler {
   readonly client: Discord.Client
 
   public constructor(client: Discord.Client) {
-    super('!event', ['text'], SessionType.CREATE);
+    super('!event', [Discord.ChannelType.GuildText], SessionType.CREATE);
     this.client = client;
   }
 
@@ -45,26 +45,25 @@ class CreateHandler extends AbstractHandler {
       const userInput = message.content;
 
       if (userInput !== '!event') {
-        if (message.channel.type !== 'dm') {
+        // The session conversation lives in DMs
+        if (!message.channel.isDMBased()) {
           return event.status;
         }
       } else {
-        if (message.channel.type !== 'text') {
+        if (message.channel.type !== Discord.ChannelType.GuildText) {
           return event.status;
         }
-      }
 
-      // Check if the bot has permissions
-      if (userInput === '!event') {
+        // Check if the bot has permissions
         try {
           await message.delete();
 
-          if (!message.guild.me.hasPermission(['SEND_MESSAGES'])) {
+          const me = message.guild.members.me;
+          if (!me || !message.channel.permissionsFor(me).has(Discord.PermissionFlagsBits.SendMessages)) {
             throw new Error('No permissions to send messages');
           }
         } catch (exception) {
-          // @ts-ignore
-          const channel: Discord.TextChannel = await this.client.channels.fetch(event.channelId)
+          const channel = await this.client.channels.fetch(event.channelId) as Discord.TextChannel;
           let msg = this.dictionary.get('/calendar/creation/noPermissions');
           msg = msg.replace('{channel}', channel.name);
           await message.author.send(msg);
