@@ -1,7 +1,7 @@
 ---
 title: "refactor: Migrate discord.js 12 to 14 (with forced TS 5 / eslint prerequisites)"
 type: refactor
-status: active
+status: completed
 date: 2026-07-08
 ---
 
@@ -117,7 +117,7 @@ Phase A lands with discord.js still at 12 — build and 20 tests stay green afte
 
 ## Implementation Units
 
-- [ ] **Unit 1: Replace tslint with eslint + typescript-eslint**
+- [x] **Unit 1: Replace tslint with eslint + typescript-eslint**
 
 **Goal:** The build's lint gate runs on maintained tooling, removing the reason TypeScript was capped at 4.9.5.
 
@@ -140,7 +140,7 @@ Phase A lands with discord.js still at 12 — build and 20 tests stay green afte
 
 **Verification:** Build green; `tslint` absent from the dependency tree.
 
-- [ ] **Unit 2: TypeScript 5.9**
+- [x] **Unit 2: TypeScript 5.9**
 
 **Goal:** The compiler can parse discord.js 14 typings; everything still works on discord.js 12.
 
@@ -162,7 +162,7 @@ Phase A lands with discord.js still at 12 — build and 20 tests stay green afte
 
 **Verification:** Build + tests green; boot smoke unchanged.
 
-- [ ] **Unit 3: discord.js 14 + client bootstrap** *(Phase B starts — build stays red until Unit 5 completes; land B as one commit series)*
+- [x] **Unit 3: discord.js 14 + client bootstrap** *(Phase B starts — build stays red until Unit 5 completes; land B as one commit series)*
 
 **Goal:** The dependency is bumped and the process entry point speaks v14: intents, enum partials, global mention policy, renamed events.
 
@@ -183,7 +183,7 @@ Phase A lands with discord.js still at 12 — build and 20 tests stay green afte
 
 **Verification:** Unit compiles only in concert with Units 4-5; its correctness is proven at the Unit 5 gate and in Unit 6 runtime checks (a `DisallowedIntents` login failure here means the Portal toggle is missing, not a code bug).
 
-- [ ] **Unit 4: Channel types, command routing, permissions**
+- [x] **Unit 4: Channel types, command routing, permissions**
 
 **Goal:** Every string channel-type comparison and removed permissions/member API is replaced; DM routing works with partial channels.
 
@@ -205,7 +205,7 @@ Phase A lands with discord.js still at 12 — build and 20 tests stay green afte
 
 **Verification:** Grep sweeps find zero `'dm'`/`'text'` channel-type strings, zero `hasPermission`, zero `guild.me`, zero `.member(`.
 
-- [ ] **Unit 5: Embeds and reactions** *(Phase B build gate)*
+- [x] **Unit 5: Embeds and reactions** *(Phase B build gate)*
 
 **Goal:** All embed construction, mutation, and send/edit payloads are v14-native; the reaction registration flow works end to end.
 
@@ -230,7 +230,7 @@ Phase A lands with discord.js still at 12 — build and 20 tests stay green afte
 
 **Verification:** `npm run build` green; grep sweeps: zero `MessageEmbed`, zero `.addField(`, zero bare-embed `send(`/`edit(` payloads, zero `on('message'` listeners anywhere.
 
-- [ ] **Unit 6: Runtime and ops verification**
+- [x] **Unit 6: Runtime and ops verification** *(code/docs/image done 2026-07-09; the manual smoke checklist against a test guild remains a human pre-deploy gate — it is reproduced in the PR description)*
 
 **Goal:** The migrated bot demonstrably works against real Discord, and the deployment actually guarantees the environment the code now requires.
 
