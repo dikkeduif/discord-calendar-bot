@@ -109,6 +109,7 @@ const CalendarTranslations = {
         deleteConfirmLabel: 'Delete event',
         deleteDone: '**{title}** is deleted.',
         deleteAlready: 'That event was already deleted.',
+        timezoneSet: 'Your timezone here is now **{zone}** (was {previous}). I\'ll use it to read the dates and times you type.',
       },
     },
     scheduledEvent: {
@@ -127,7 +128,8 @@ const CalendarTranslations = {
       $filter: 'lang',
       'en': {
         noEvent: 'There is currently no event active for editing, start a new event with **!event** in the channel of your choice or type **!help** here to get an overview of commands',
-        help: 'You can create a new event by typing ``!event`` in the channel of your choice. The event will be created in that channel.\n\nTo modify your event type ``!modify`` in a **direct message** to me.',
+        help: '**Creating events**\nUse ``/event create`` in the channel where the event should live — a form opens for the title, description, date, time and registration options. People sign up with the buttons under the event.\n\n**Managing events**\n``/event modify`` changes one of your upcoming events (including its reminder), ``/event delete`` removes one. ``/timezone set`` controls how I read the dates and times you type.\n\nThe old ``!`` commands still work for now, but they are retiring soon.',
+        deprecationNudge: '💡 The ``!`` commands are retiring soon — use ``/event create`` in your server instead. If you don\'t see the slash commands there, a server admin needs to re-authorize the bot with the invite link from the README.',
         sessionEnd: 'We closed your session, you can type ``!help`` to get a list of commands.'
       }
     }

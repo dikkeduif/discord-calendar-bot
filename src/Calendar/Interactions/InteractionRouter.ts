@@ -25,6 +25,7 @@ import RegistrationButtonHandler from './RegistrationButtonHandler';
 import CreateCommand, { CREATE_MODAL_ID, CREATE_RETRY_ID } from './CreateCommand';
 import ModifyCommand, { MODIFY_MODAL_NAMESPACE } from './ModifyCommand';
 import DeleteCommand, { DELETE_CONFIRM_NAMESPACE } from './DeleteCommand';
+import TimezoneCommand from './TimezoneCommand';
 
 export default class InteractionRouter {
   /**
@@ -47,6 +48,7 @@ export default class InteractionRouter {
   private createCommand: CreateCommand;
   private modifyCommand: ModifyCommand;
   private deleteCommand: DeleteCommand;
+  private timezoneCommand: TimezoneCommand;
 
   constructor(client: Discord.Client) {
     this.client = client;
@@ -56,6 +58,7 @@ export default class InteractionRouter {
     this.createCommand = new CreateCommand();
     this.modifyCommand = new ModifyCommand();
     this.deleteCommand = new DeleteCommand();
+    this.timezoneCommand = new TimezoneCommand();
   }
 
   /**
@@ -122,7 +125,12 @@ export default class InteractionRouter {
       }
     }
 
-    // The timezone handler joins in the final unit of this release
+    if (interaction.commandName === 'timezone' && interaction.options.getSubcommand() === 'set') {
+      await this.timezoneCommand.execute(interaction);
+      return;
+    }
+
+    Logger.debug('Unrouted chat command: ' + interaction.commandName);
     await this.replyWithError(interaction);
   }
 
@@ -132,6 +140,10 @@ export default class InteractionRouter {
     try {
       if (interaction.commandName === 'event') {
         await this.modifyCommand.autocomplete(interaction);
+        return;
+      }
+      if (interaction.commandName === 'timezone') {
+        await this.timezoneCommand.autocomplete(interaction);
         return;
       }
       await interaction.respond([]);
