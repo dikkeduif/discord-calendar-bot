@@ -20,6 +20,7 @@ import * as Discord from 'discord.js';
 import { Dictionary, CalendarTranslations } from '../../Dictionaries';
 import { Event, EventModel } from '../Models/Event';
 import AdminActions from '../Services/AdminActions';
+import ChannelStateCache from '../Services/ChannelStateCache';
 import moment_tz from 'moment-timezone';
 import Logger from '../../Bot/Logger';
 
@@ -91,6 +92,12 @@ export class CalendarReminders {
   }
 
   private async sendReminder(event: Event) {
+    // Race safety net: detached events are already inactive, but a tick
+    // loaded before the detach landed must not ping the channel
+    if (ChannelStateCache.isBlocked(event.channelId)) {
+      return;
+    }
+
     const channel = await this.client.channels.fetch(event.channelId);
 
     const userIds = [];

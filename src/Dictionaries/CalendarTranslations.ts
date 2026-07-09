@@ -22,6 +22,7 @@ const CalendarTranslations = {
       $filter: 'lang',
       'en': {
         noPermissions: 'Looks like I (the bot) don\'t have any write/edit permissions on channel {channel}, please fix my permissions first. I need the **Manage Messages** and **Send Messages** permissions',
+        channelDetached: 'That channel is closed for new events — an admin detached it from the calendar bot. Your session was ended.',
         reactionPermissions: 'I\'m trying to manage the reactions on event **{event}** in channel **{channel}**, but I don\'t have enough rights. I need the **Manage Messages** permission',
         firstTimeUser: 'Hey **{username}**, thanks for using this bot for the first time on **{guildname}**.\nDuring the creation of this event I will ask you about **discord server** and **your personal** time zone. You only have to do this **once**! I will remember your choice for all future events created by you!\n\nType ``OK`` to continue or type ``!exit`` at any time do quit the event creation!',
         eventTitle: 'What is the **title** of your event? You can press **!exit** at any time to cancel',
@@ -111,6 +112,7 @@ const CalendarTranslations = {
         deleteDone: '**{title}** is deleted.',
         deleteAlready: 'That event was already deleted.',
         timezoneSet: 'Your timezone here is now **{zone}** (was {previous}). I\'ll use it to read the dates and times you type.',
+        channelDetached: 'This channel is closed for new events — an admin detached it from the calendar bot.',
       },
     },
     scheduledEvent: {

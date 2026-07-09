@@ -163,27 +163,37 @@ export default class RegistrationButtonHandler {
     }
 
     // Atomic keyed update so two simultaneous clicks cannot overwrite
-    // each other; re-use the returned document so the embed rebuild also
-    // reflects registrations written by concurrent clicks
-    const updated = await EventModel.findByIdAndUpdate(
-      event._id,
+    // each other; the active filter loses the race against a concurrent
+    // delete/detach instead of resurrecting a registration onto it
+    const updated = await EventModel.findOneAndUpdate(
+      { _id: event._id, active: true },
       { $set: { ['registrations.' + interaction.user.id]: optionKey } },
       { new: true });
 
-    if (updated && updated.registrations) {
+    if (updated === null) {
+      await this.closeRegistration(interaction);
+      return;
+    }
+
+    if (updated.registrations) {
       event.registrations = updated.registrations;
-    } else {
-      if (!event.registrations) {
-        event.registrations = new Map<string, string>();
-      }
-      event.registrations.set(interaction.user.id, optionKey);
     }
 
     const fields = await RegistrationRenderer.renderFields(interaction.client, interaction.guild, event);
     const embed = Discord.EmbedBuilder.from(interaction.message.embeds[0]).setFields(fields);
 
-    // Components are left untouched by omitting them from the edit
-    await interaction.editReply({ embeds: [embed] });
+    try {
+      // Components are left untouched by omitting them from the edit
+      await interaction.editReply({ embeds: [embed] });
+    } catch (err) {
+      // The message can vanish mid-flight (concurrent delete); the
+      // registration write itself already lost or won atomically
+      if (err.code === Discord.RESTJSONErrorCodes.UnknownMessage) {
+        Logger.debug('Event message gone before embed update: ' + interaction.message.id);
+        return;
+      }
+      throw err;
+    }
   }
 
   private async closeRegistration(interaction: Discord.ButtonInteraction) {

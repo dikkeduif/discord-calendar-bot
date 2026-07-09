@@ -23,6 +23,7 @@ import Logger from '../../Bot/Logger';
 import ScheduledEvent from './ScheduledEvent';
 import RegistrationRenderer from './RegistrationRenderer';
 import RegistrationButtonHandler from '../Interactions/RegistrationButtonHandler';
+import ChannelStateCache from '../Services/ChannelStateCache';
 
 export default class Message {
   private messageId: string;
@@ -41,6 +42,16 @@ export default class Message {
     let description = event.description;
     // 20201213T230000
     description += '\n\n**Time**\n' + '<t:' + newDateServer + ':F> (<t:' + newDateServer + ':R>)';
+
+    // Hard safety net for every creation surface (slash, legacy
+    // interview, retry drafts): detached channels never get a post. The
+    // surfaces give their own friendlier rejections earlier; deactivate
+    // here so no ghost event survives the race
+    if (ChannelStateCache.isBlocked(event.channelId)) {
+      event.active = false;
+      Logger.info('Blocked event post into detached channel', { channelId: event.channelId, shortId: event.shortId });
+      return;
+    }
 
     // Every new event registers via buttons, whichever surface created
     // it; the legacy reaction path only serves messages posted before this
