@@ -77,7 +77,7 @@ export class CalendarReminders {
         Logger.error('Reminder failed for event ' + event.shortId + ': ' + err.message, { shortId: event.shortId });
 
         // The channel is gone for good: retire every event that points at it
-        if (err instanceof Discord.DiscordAPIError && err.code === 10003) {
+        if (err instanceof Discord.DiscordAPIError && err.code === Discord.RESTJSONErrorCodes.UnknownChannel) {
           deadChannels.add(event.channelId);
           const result = await EventModel.updateMany(
             { channelId: event.channelId, active: true },
@@ -91,10 +91,10 @@ export class CalendarReminders {
   }
 
   private async sendReminder(event: Event) {
-    const channel: any = await this.client.channels.fetch(event.channelId);
+    const channel = await this.client.channels.fetch(event.channelId);
 
     const userIds = [];
-    if (channel.type === 'text' && event.reminder && !event.reminderSent) {
+    if (channel && channel.type === Discord.ChannelType.GuildText && event.reminder && !event.reminderSent) {
 
       if (event.eventDate.getTime() / 1000 - moment_tz().unix() < event.reminder * 60) {
         const regs = event.registrations;

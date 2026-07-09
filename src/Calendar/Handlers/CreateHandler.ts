@@ -33,7 +33,7 @@ class CreateHandler extends AbstractHandler {
   readonly client: Discord.Client
 
   public constructor(client: Discord.Client) {
-    super('!event', ['text'], SessionType.CREATE);
+    super('!event', [Discord.ChannelType.GuildText], SessionType.CREATE);
     this.client = client;
   }
 
@@ -45,26 +45,25 @@ class CreateHandler extends AbstractHandler {
       const userInput = message.content;
 
       if (userInput !== '!event') {
-        if (message.channel.type !== 'dm') {
+        // The session conversation lives in DMs
+        if (!message.channel.isDMBased()) {
           return event.status;
         }
       } else {
-        if (message.channel.type !== 'text') {
+        if (message.channel.type !== Discord.ChannelType.GuildText) {
           return event.status;
         }
-      }
 
-      // Check if the bot has permissions
-      if (userInput === '!event') {
+        // Check if the bot has permissions
         try {
           await message.delete();
 
-          if (!message.guild.me.hasPermission(['SEND_MESSAGES'])) {
+          const me = message.guild.members.me;
+          if (!me || !message.channel.permissionsFor(me).has(Discord.PermissionFlagsBits.SendMessages)) {
             throw new Error('No permissions to send messages');
           }
         } catch (exception) {
-          // @ts-ignore
-          const channel: Discord.TextChannel = await this.client.channels.fetch(event.channelId)
+          const channel = await this.client.channels.fetch(event.channelId) as Discord.TextChannel;
           let msg = this.dictionary.get('/calendar/creation/noPermissions');
           msg = msg.replace('{channel}', channel.name);
           await message.author.send(msg);
@@ -119,7 +118,7 @@ class CreateHandler extends AbstractHandler {
                 msg = this.dictionary.get('/calendar/creation/invalidTimeZone');
               }
             } else {
-              let timeZoneString = '';
+              let timeZoneString: string;
               if (userInput.toLowerCase() === 'ok') {
                 timeZoneString = event.eventTimeZone;
               } else {
@@ -171,7 +170,7 @@ class CreateHandler extends AbstractHandler {
               msg = e.message;
             }
             break;
-          case EventCreationProgress.WaitingForTime:
+          case EventCreationProgress.WaitingForTime: {
             const myDate = moment_tz(event.eventDate).tz(event.userTimeZone).format('DD-MM-YYYY');
             try {
               const eventDate = DateValidation.validate(myDate + ' ' + userInput, event.userTimeZone);
@@ -181,7 +180,8 @@ class CreateHandler extends AbstractHandler {
               msg = e.message;
             }
             break;
-          case EventCreationProgress.WaitingForOptions:
+          }
+          case EventCreationProgress.WaitingForOptions: {
             const params = userInput.split(' ');
 
             switch (params[0].toLowerCase()) {
@@ -228,6 +228,7 @@ class CreateHandler extends AbstractHandler {
                 break;
             }
             break;
+          }
           case EventCreationProgress.WaitingForDeclineOption:
             switch (userInput.toLowerCase()) {
               case 'ok':
@@ -243,7 +244,7 @@ class CreateHandler extends AbstractHandler {
                   msg = this.dictionary.get('/calendar/creation/emojiInOptions');
                 }
                 break;
-              default:
+              default: {
                 const emoji = EmojiValidation.isValidEmoji(userInput, this.client);
                 if (emoji !== false) {
                   if (EmojiValidation.emojiPartOfList(emoji, event.options)) {
@@ -258,6 +259,7 @@ class CreateHandler extends AbstractHandler {
                   msg = this.dictionary.get('/calendar/creation/invalidEmoji');
                 }
                 break;
+              }
             }
             break;
           default:
@@ -290,22 +292,24 @@ class CreateHandler extends AbstractHandler {
             msg = this.dictionary.get('/calendar/creation/eventTimeZone');
             msg = msg.replace('{timezone}', event.eventTimeZone);
             break;
-          case EventCreationProgress.WaitingForServerTimeZoneConfirmation:
+          case EventCreationProgress.WaitingForServerTimeZoneConfirmation: {
             msg = this.dictionary.get('/calendar/creation/confirmTimeZone');
             msg = msg.replace('{timezone}', event.eventTimeZone);
             const moment = moment_tz(new Date()).tz(event.eventTimeZone).format('DD-MM-yyyy HH:mm');
             msg = msg.replace('{datetime}', moment);
             break;
+          }
           case EventCreationProgress.WaitingForUserTimeZone:
             msg = this.dictionary.get('/calendar/creation/userTimeZone');
             msg = msg.replace('{timezone}', event.userTimeZone);
             break;
-          case EventCreationProgress.WaitingForUserTimeZoneConfirmation:
+          case EventCreationProgress.WaitingForUserTimeZoneConfirmation: {
             msg = this.dictionary.get('/calendar/creation/confirmTimeZone');
             const moment2 = moment_tz(new Date()).tz(event.userTimeZone).format('DD-MM-yyyy HH:mm');
             msg = msg.replace('{datetime}', moment2);
             msg = msg.replace('{timezone}', event.userTimeZone);
             break;
+          }
           case EventCreationProgress.WaitingForTimeZoneConfirmation:
             msg = this.dictionary.get('/calendar/creation/showChosenTimeZones');
             msg = msg.replace('{eventTimeZone}', event.eventTimeZone);

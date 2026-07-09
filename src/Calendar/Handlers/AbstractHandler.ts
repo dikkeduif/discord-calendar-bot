@@ -24,10 +24,10 @@ import { SessionManager } from '../Classes/SessionManager';
 abstract class AbstractHandler {
   readonly command: string;
   readonly sessionType: string;
-  private allowedChannelTypes: string[];
+  private allowedChannelTypes: Discord.ChannelType[];
   protected dictionary: Dictionary;
 
-  protected constructor(command: string, channelType: string[], sessionType: string) {
+  protected constructor(command: string, channelType: Discord.ChannelType[], sessionType: string) {
     this.command = command;
     this.sessionType = sessionType;
     this.allowedChannelTypes = channelType;
@@ -36,7 +36,7 @@ abstract class AbstractHandler {
 
   public abstract processMessage(message: Discord.Message, event: Event, sessionManager: SessionManager): Promise<number>;
 
-  public canProcessCommand(command: string, channelType: string) {
+  public canProcessCommand(command: string, channelType: Discord.ChannelType) {
     return (this.command === command && this.allowedChannelTypes.indexOf(channelType) >= 0);
   }
   public getSessionType() {

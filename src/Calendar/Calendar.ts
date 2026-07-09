@@ -31,11 +31,11 @@ export class Calendar {
     this.reminders = new CalendarReminders(client);
   }
 
-  public async reactionAdded(reaction: Discord.MessageReaction, user: Discord.User | Discord.PartialUser) {
+  public async reactionAdded(reaction: Discord.MessageReaction | Discord.PartialMessageReaction, user: Discord.User | Discord.PartialUser) {
     return this.handler.reactionAdded(reaction, user);
   }
 
-  public async reactionRemoved(reaction: Discord.MessageReaction, user: Discord.User | Discord.PartialUser) {
+  public async reactionRemoved(reaction: Discord.MessageReaction | Discord.PartialMessageReaction, user: Discord.User | Discord.PartialUser) {
     return this.handler.reactionRemoved(reaction, user);
   }
 
