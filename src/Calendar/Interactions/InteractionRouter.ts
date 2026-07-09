@@ -23,6 +23,8 @@ import { buildCommandDefinitions } from './CommandDefinitions';
 import HelpCommand from './HelpCommand';
 import RegistrationButtonHandler from './RegistrationButtonHandler';
 import CreateCommand, { CREATE_MODAL_ID, CREATE_RETRY_ID } from './CreateCommand';
+import ModifyCommand, { MODIFY_MODAL_NAMESPACE } from './ModifyCommand';
+import DeleteCommand, { DELETE_CONFIRM_NAMESPACE } from './DeleteCommand';
 
 export default class InteractionRouter {
   /**
@@ -43,6 +45,8 @@ export default class InteractionRouter {
   private helpCommand: HelpCommand;
   private registrationButtons: RegistrationButtonHandler;
   private createCommand: CreateCommand;
+  private modifyCommand: ModifyCommand;
+  private deleteCommand: DeleteCommand;
 
   constructor(client: Discord.Client) {
     this.client = client;
@@ -50,6 +54,8 @@ export default class InteractionRouter {
     this.helpCommand = new HelpCommand();
     this.registrationButtons = new RegistrationButtonHandler();
     this.createCommand = new CreateCommand();
+    this.modifyCommand = new ModifyCommand();
+    this.deleteCommand = new DeleteCommand();
   }
 
   /**
@@ -100,12 +106,23 @@ export default class InteractionRouter {
       return;
     }
 
-    if (interaction.commandName === 'event' && interaction.options.getSubcommand() === 'create') {
-      await this.createCommand.execute(interaction);
-      return;
+    if (interaction.commandName === 'event') {
+      const subcommand = interaction.options.getSubcommand();
+      if (subcommand === 'create') {
+        await this.createCommand.execute(interaction);
+        return;
+      }
+      if (subcommand === 'modify') {
+        await this.modifyCommand.execute(interaction);
+        return;
+      }
+      if (subcommand === 'delete') {
+        await this.deleteCommand.execute(interaction);
+        return;
+      }
     }
 
-    // The remaining handlers join in later units of this release
+    // The timezone handler joins in the final unit of this release
     await this.replyWithError(interaction);
   }
 
@@ -113,6 +130,10 @@ export default class InteractionRouter {
     // Autocomplete cannot show errors and cannot be deferred: whatever
     // happens, answer inside the 3-second window — empty on failure
     try {
+      if (interaction.commandName === 'event') {
+        await this.modifyCommand.autocomplete(interaction);
+        return;
+      }
       await interaction.respond([]);
     } catch (err) {
       Logger.error('Autocomplete failed: ' + err.message);
@@ -122,6 +143,11 @@ export default class InteractionRouter {
   private async routeModalSubmit(interaction: Discord.ModalSubmitInteraction) {
     if (interaction.customId === CREATE_MODAL_ID) {
       await this.createCommand.handleModalSubmit(interaction);
+      return;
+    }
+
+    if (InteractionRouter.matchNamespace(interaction.customId) === MODIFY_MODAL_NAMESPACE) {
+      await this.modifyCommand.handleModalSubmit(interaction);
       return;
     }
 
@@ -138,6 +164,11 @@ export default class InteractionRouter {
 
     if (interaction.customId === CREATE_RETRY_ID) {
       await this.createCommand.handleRetry(interaction);
+      return;
+    }
+
+    if (namespace === DELETE_CONFIRM_NAMESPACE) {
+      await this.deleteCommand.handleConfirm(interaction);
       return;
     }
 

@@ -76,7 +76,7 @@ export default class Message {
     }
   }
 
-  public async updateEventMessage(event: Event) {
+  public async updateEventMessage(event: Event): Promise<boolean> {
     try {
       const channel = await this.client.channels.fetch(event.channelId) as Discord.TextChannel;
 
@@ -101,21 +101,31 @@ export default class Message {
 
         await new ScheduledEvent().update(event, channel);
       }
+      return true;
     } catch (exc) {
       Logger.error('Unable to edit an event', { event, exception: exc });
+      return false;
     }
   }
 
   public async delete(event: Event) {
+    let channel: Discord.TextChannel;
     try {
-      const channel = await this.client.channels.fetch(event.channelId) as Discord.TextChannel;
-
-      const message = await channel.messages.fetch(event.messageId)
-      await message.delete();
-
-      await new ScheduledEvent().delete(event, channel);
+      channel = await this.client.channels.fetch(event.channelId) as Discord.TextChannel;
     } catch (exc) {
       Logger.error('Unable to delete an event', { event, exception: exc });
+      return;
     }
+
+    try {
+      const message = await channel.messages.fetch(event.messageId)
+      await message.delete();
+    } catch (exc) {
+      // The message may already be gone (deleted by hand); the native
+      // scheduled event still needs cleaning up below
+      Logger.error('Unable to delete the event message', { event, exception: exc });
+    }
+
+    await new ScheduledEvent().delete(event, channel);
   }
 }
