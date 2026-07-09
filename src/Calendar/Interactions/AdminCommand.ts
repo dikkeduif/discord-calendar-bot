@@ -130,14 +130,7 @@ export default class AdminCommand {
   private async showGuilds(interaction: Discord.ChatInputCommandInteraction) {
     await interaction.deferReply({ flags: Discord.MessageFlags.Ephemeral });
 
-    const counts = new Map<string, number>();
-    const grouped = await EventModel.aggregate([
-      { $match: { active: true } },
-      { $group: { _id: '$guildId', count: { $sum: 1 } } },
-    ]);
-    for (const row of grouped) {
-      counts.set(row._id, row.count);
-    }
+    const counts = await EventModel.getActiveCountsByGuild();
 
     const lines = interaction.client.guilds.cache.map((guild) =>
       '**' + guild.name + '** — ' + (counts.get(guild.id) ?? 0) + ' active event(s) — id ``' + guild.id + '``');

@@ -104,7 +104,9 @@ export default class DashboardServer {
     this.app.disable('x-powered-by');
 
     this.app.use((req, res, next) => {
-      res.set('Content-Security-Policy', 'default-src \'self\'');
+      // style-src allows the layout's inline <style>; scripts stay
+      // locked to 'self' (and the pages ship none)
+      res.set('Content-Security-Policy', 'default-src \'self\'; style-src \'unsafe-inline\'');
       res.set('X-Content-Type-Options', 'nosniff');
       res.set('X-Frame-Options', 'DENY');
       next();

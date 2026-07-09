@@ -176,6 +176,14 @@ class Event {
   }
 
 
+  public static async getActiveCountsByGuild(this: ReturnModelType<typeof Event>): Promise<Map<string, number>> {
+    const grouped = await this.aggregate([
+      { $match: { active: true } },
+      { $group: { _id: '$guildId', count: { $sum: 1 } } },
+    ]);
+    return new Map(grouped.map((row) => [row._id, row.count]));
+  }
+
   public static async getUpcomingGuildEvents(this: ReturnModelType<typeof Event>, authorId: string, guildId: string) {
     // Autocomplete source: guild-scoped (the DM-based getUserEvents below
     // spans guilds by design), capped at Discord's 25-choice limit
