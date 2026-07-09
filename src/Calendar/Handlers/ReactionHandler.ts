@@ -60,7 +60,7 @@ export default class ReactionHandler {
         newEvent.description = myEmbed.description;
         newEvent.messageId = reaction.message.id;
 
-        for (const [index, value] of reactions.cache) {
+        for (const [, value] of reactions.cache) {
           const reactionUsers = await value.users.fetch();
           const emoji = value.emoji;
 
@@ -68,7 +68,7 @@ export default class ReactionHandler {
           if (emojiName !== false) {
             newEvent.setOption(emojiName, ' ');
 
-            for (const [index2, rUser] of reactionUsers) {
+            for (const [, rUser] of reactionUsers) {
               if (!rUser.bot) {
                 if (newEvent.registrations === undefined) {
                   newEvent.registrations = new Map<string, string>();
@@ -178,7 +178,7 @@ export default class ReactionHandler {
         }
       }
 
-      let nickname = '';
+      let nickname: string;
       if (guildMember === null || guildMember.nickname === null) {
         nickname = registeredUser.username;
       } else {

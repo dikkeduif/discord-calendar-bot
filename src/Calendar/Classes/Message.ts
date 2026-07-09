@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { Event, EventModel } from '../Models/Event';
+import { Event } from '../Models/Event';
 import * as Discord from 'discord.js';
 import moment_tz from 'moment-timezone';
 import Logger from '../../Bot/Logger';
@@ -54,7 +54,7 @@ export default class Message {
       const options = event.options;
 
       if (options) {
-        for (const [key, value] of options) {
+        for (const [key] of options) {
           const emojiName: string = key;
           await result.react(emojiName);
         }

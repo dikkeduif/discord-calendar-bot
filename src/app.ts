@@ -95,7 +95,7 @@ client.on('messageReactionRemove', (reaction, user) => {
 });
 
 client.login(Settings.get('/discord/token')).then((res) => {
-  Logger.info(`Connecting to discord`);
+  Logger.info('Connecting to discord');
 }).catch((err) => {
   Logger.error('Discord login failed: ' + err.message);
   process.exit(1);

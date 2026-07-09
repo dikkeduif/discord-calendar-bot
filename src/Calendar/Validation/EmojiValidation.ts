@@ -44,7 +44,7 @@ export default class EmojiValidation {
 
   static emojiPartOfList(emojiStr, list) {
     if (list !== undefined) {
-      for (const [key, value] of list) {
+      for (const [key] of list) {
         if (key === emojiStr) {
           return true;
         }

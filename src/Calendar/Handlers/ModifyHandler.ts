@@ -134,13 +134,14 @@ class ModifyHandler extends AbstractHandler {
                 msg = msg.replace('{allowed}', '200');
               }
               break;
-            case EventCreationProgress.WaitingForDescription:
+            case EventCreationProgress.WaitingForDescription: {
               event.description = userInput;
               await EventModel.findOneAndUpdate({shortId: event.shortId}, {description: userInput});
               const messageToUpdate = new Message(this.client, event.messageId);
               await messageToUpdate.updateEventMessage(event);
               event.status = EventCreationProgress.Done;
               break;
+            }
             case EventCreationProgress.WaitingForDelete:
               if (userInput === 'yes') {
                 await EventModel.findOneAndUpdate({shortId: event.shortId}, {active: false});
@@ -166,12 +167,13 @@ class ModifyHandler extends AbstractHandler {
 
       if (msg.length === 0) {
         switch (event.status) {
-          case EventCreationProgress.WaitingForTime:
+          case EventCreationProgress.WaitingForTime: {
             msg = this.dictionary.get('/calendar/modify/changeTime');
             msg = msg.replace('{timezone}', event.userTimeZone);
             const m = moment(event.eventDate).tz(event.userTimeZone).format('DD-MM-yyyy HH:mm');
             msg = msg.replace('{currentdate}', m);
             break;
+          }
           case EventCreationProgress.WaitingForTitle:
             msg = this.dictionary.get('/calendar/modify/title');
             break;
