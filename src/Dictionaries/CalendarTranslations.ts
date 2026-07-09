@@ -69,6 +69,12 @@ const CalendarTranslations = {
         exiting: 'Exiting'
       }
     },
+    scheduledEvent: {
+      $filter: 'lang',
+      'en': {
+        signupHint: 'Sign up via the reactions on the event message in #{channel}. Marking yourself interested here does not register you.',
+      },
+    },
     reminder: {
       $filter: 'lang',
       'en': {

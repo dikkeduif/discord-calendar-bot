@@ -27,7 +27,7 @@ You need to have docker and docker-compose installed.
 1. Clone the repository
 2. Create your own discord developer app at https://discord.com/developers/applications and get your discord token, which you will need in step 3. In the same app, enable **Message Content Intent** under Bot → Privileged Gateway Intents — without it the bot cannot read commands, and login fails with a `Used disallowed intents` (DisallowedIntents) error.
 3. run ```NODE_ENV=prod MONGODB_CONNECTION_STRING=mongodb://localhost:27017/calendarbot DISCORD_TOKEN=<your app token here> docker-compose up```
-4. Once the bot is up and running you can invite it to your server ```https://discord.com/oauth2/authorize?client_id=<you app client id>&permissions=355408&scope=bot```. Note: this is the client id of the app, not the token id!
+4. Once the bot is up and running you can invite it to your server ```https://discord.com/oauth2/authorize?client_id=<you app client id>&permissions=8590290000&scope=bot```. Note: this is the client id of the app, not the token id!
 5. Once the bot is in one of your channels you can type !event to create a new event
 
 ## Bot permissions
@@ -35,6 +35,8 @@ You need to have docker and docker-compose installed.
 By default, people can create events in whatever channel the bot is in. You need to set up your own channel permissions and lock the bot down to one of those channels.
 
 Usually you want to create an #events channel or something similar and make it read only for your regular users. Event creators need the ability to write in that channel, since they have to be able to type the ```!event``` command. The bot obviously needs to be able to write and modify in the channel.
+
+The invite link above also includes the **Manage Events** permission: every bot event is then mirrored as a native Discord scheduled event in your server's Events tab (with Discord's own start notification). This is optional — without the permission the bot works exactly as before, just without the Events-tab entry. Servers that invited the bot earlier can grant **Manage Events** to the bot's role to enable it.
 
 ## Localization
 

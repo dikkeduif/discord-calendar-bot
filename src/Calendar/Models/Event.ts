@@ -51,6 +51,12 @@ class Event {
   @prop({index: true})
   public messageId?: string;
 
+  // Discord native scheduled event mirroring this bot event, if the
+  // guild granted Manage Events; absent on older events and on guilds
+  // without the permission
+  @prop()
+  public scheduledEventId?: string;
+
   @prop()
   public channelId?: string;
 
