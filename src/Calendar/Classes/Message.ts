@@ -133,6 +133,6 @@ export default class Message {
       Logger.error('Unable to delete the event message', { event, exception: exc });
     }
 
-    await new ScheduledEvent().delete(event, channel);
+    await new ScheduledEvent().delete(event, channel.guild);
   }
 }

@@ -18,7 +18,7 @@
 
 import * as Discord from 'discord.js';
 import { EventModel } from '../Models/Event';
-import Message from '../Classes/Message';
+import AdminActions from '../Services/AdminActions';
 import { Dictionary, CalendarTranslations } from '../../Dictionaries';
 
 export const DELETE_CONFIRM_NAMESPACE = 'ev:del';
@@ -75,8 +75,10 @@ export default class DeleteCommand {
     // native scheduled event
     await interaction.deferUpdate();
 
-    await EventModel.findOneAndUpdate({ shortId, authorId: interaction.user.id }, { active: false });
-    await new Message(interaction.client, event.messageId).delete(event);
+    await new AdminActions(interaction.client).deleteEvent(shortId, {
+      ownerBypass: false,
+      authorId: interaction.user.id,
+    });
 
     await interaction.editReply({
       content: this.dictionary.get('/calendar/interaction/deleteDone').replace('{title}', event.title),

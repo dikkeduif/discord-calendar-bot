@@ -69,6 +69,10 @@ client.on('clientReady', () => {
   calendar.registerCommands().catch((err) => {
     Logger.error('Slash command registration failed: ' + err.message);
   });
+
+  calendar.loadChannelStates().catch((err) => {
+    Logger.error('Channel state load failed: ' + err.message);
+  });
 });
 
 client.on('error', (err) => {

@@ -90,13 +90,15 @@ export default class ScheduledEvent {
     }
   }
 
-  public async delete(event: Event, channel: Discord.TextChannel) {
+  // Takes the guild rather than a channel: cleanup must work for events
+  // whose channel no longer exists (quarantine, detach of dead channels)
+  public async delete(event: Event, guild: Discord.Guild) {
     if (!event.scheduledEventId) {
       return;
     }
 
     try {
-      await channel.guild.scheduledEvents.delete(event.scheduledEventId);
+      await guild.scheduledEvents.delete(event.scheduledEventId);
     } catch (exc) {
       Logger.error('Unable to delete the native scheduled event', { shortId: event.shortId, exception: exc });
     }
