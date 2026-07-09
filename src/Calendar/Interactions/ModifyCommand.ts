@@ -80,7 +80,7 @@ export default class ModifyCommand {
    * happens, an answer leaves within the 3-second window.
    */
   public async autocomplete(interaction: Discord.AutocompleteInteraction) {
-    let choices: Discord.ApplicationCommandOptionChoiceData[] = [];
+    const choices: Discord.ApplicationCommandOptionChoiceData[] = [];
 
     try {
       const events = await EventModel.getUpcomingGuildEvents(interaction.user.id, interaction.guildId);

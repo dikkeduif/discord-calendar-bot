@@ -44,4 +44,8 @@ export default class ChannelStateCache {
   public static clear(channelId: string) {
     ChannelStateCache.states.delete(channelId);
   }
+
+  public static entries(): Array<{ channelId: string, state: string }> {
+    return Array.from(ChannelStateCache.states, ([channelId, state]) => ({ channelId, state }));
+  }
 }

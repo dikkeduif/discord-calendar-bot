@@ -32,7 +32,7 @@ export interface ActorScope {
 }
 
 export interface ActionOutcome {
-  status: 'done' | 'already' | 'notFound';
+  status: 'done' | 'already' | 'notFound' | 'owned';
   deactivated?: number;
   mirrorsDeleted?: number;
   priorState?: string;
@@ -120,6 +120,50 @@ export default class AdminActions {
 
     Logger.info('Event deleted', { shortId, ownerBypass: scope.ownerBypass });
     return { status: 'done' };
+  }
+
+  /**
+   * Leaves a guild without leaving ghosts: native mirrors are deleted
+   * first (they persist after the creator departs, and the bot loses
+   * access the moment it leaves), then the guild's events deactivate,
+   * then the actual leave. Idempotent: a guild that is already gone
+   * still gets its local cleanup.
+   */
+  public async leaveGuild(guildId: string): Promise<ActionOutcome> {
+    const guild = this.client.guilds.cache.get(guildId);
+    const events = await EventModel.find({ guildId, active: true });
+
+    let mirrorsDeleted = 0;
+    if (guild !== undefined) {
+      for (const event of events) {
+        if (event.scheduledEventId) {
+          await new ScheduledEvent().delete(event, guild);
+          mirrorsDeleted++;
+        }
+      }
+    }
+
+    await EventModel.updateMany({ guildId, active: true }, { active: false });
+
+    if (guild === undefined) {
+      Logger.info('Guild already gone, cleaned up locally', { guildId, deactivated: events.length });
+      return { status: 'already', deactivated: events.length, mirrorsDeleted };
+    }
+
+    try {
+      await guild.leave();
+    } catch (err) {
+      if (err.code === Discord.RESTJSONErrorCodes.UnknownGuild) {
+        return { status: 'already', deactivated: events.length, mirrorsDeleted };
+      }
+      if (err.code === Discord.DiscordjsErrorCodes.GuildOwned) {
+        return { status: 'owned', deactivated: events.length, mirrorsDeleted };
+      }
+      throw err;
+    }
+
+    Logger.info('Left guild', { guildId, deactivated: events.length, mirrorsDeleted });
+    return { status: 'done', deactivated: events.length, mirrorsDeleted };
   }
 
   /**

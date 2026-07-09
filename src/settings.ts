@@ -24,7 +24,9 @@ const settings = {
   sessionTimeout: 600,
   environment: process.env.NODE_ENV,
   discord: {
-    token: process.env.DISCORD_TOKEN
+    token: process.env.DISCORD_TOKEN,
+    // Gates /admin and the dashboard; both stay disabled when unset
+    ownerId: process.env.OWNER_USER_ID
   },
   databases: {
     mongoose: {
