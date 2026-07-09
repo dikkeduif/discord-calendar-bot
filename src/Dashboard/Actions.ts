@@ -99,6 +99,48 @@ export function registerDashboardActions(app: express.Express, client: Discord.C
     res.redirect(backTo(req, cached?.guildId) + '?msg=' + encodeURIComponent(message));
   });
 
+  // Drift cleanups. Ghost cleanup gets the double confirm the plan
+  // requires: scan → this page → POST
+  app.get('/confirm/cleanup-ghost/:guildId', (req, res) => {
+    if (!AdminCommand.isSnowflake(req.params.guildId)) {
+      res.redirect('/drift');
+      return;
+    }
+    res.send(layout('Clean up ghost guild?', html`
+      <h1>Clean up ghost guild <code>${req.params.guildId}</code>?</h1>
+      <p>The bot is no longer in this guild. Its remaining active events will be closed locally; native
+      events there cannot be touched anymore. If the bot gets re-invited, closed events stay closed.</p>
+      <form method="post" action="/action/cleanup-ghost/${req.params.guildId}"><button class="danger">Yes, clean up</button></form>
+      <p><a href="/drift">Cancel</a></p>`));
+  });
+
+  app.post('/action/cleanup-ghost/:guildId', async (req, res) => {
+    if (!AdminCommand.isSnowflake(req.params.guildId)) {
+      res.redirect('/drift');
+      return;
+    }
+    // leaveGuild handles the already-gone case as pure local cleanup
+    const outcome = await actions().leaveGuild(req.params.guildId);
+    audit('cleanupGhostGuild', req.params.guildId, outcome);
+    res.redirect('/drift?msg=' + encodeURIComponent('Cleaned up — closed ' + (outcome.deactivated ?? 0) + ' event(s)'));
+  });
+
+  app.post('/action/quarantine/:channelId', async (req, res) => {
+    if (!AdminCommand.isSnowflake(req.params.channelId)) {
+      res.redirect('/drift');
+      return;
+    }
+    const outcome = await actions().quarantineChannel(req.params.channelId, undefined);
+    audit('quarantineChannel', req.params.channelId, outcome);
+    res.redirect('/drift?msg=' + encodeURIComponent('Channel quarantined — closed ' + (outcome.deactivated ?? 0) + ' event(s)'));
+  });
+
+  app.post('/action/clear-mirror/:shortId', async (req, res) => {
+    const outcome = await actions().clearMirror(req.params.shortId);
+    audit('clearMirror', req.params.shortId, outcome);
+    res.redirect('/drift?msg=' + encodeURIComponent(outcome.status === 'done' ? 'Stale reference cleared' : 'Nothing to clear'));
+  });
+
   app.post('/action/reattach/:channelId', async (req, res) => {
     if (!AdminCommand.isSnowflake(req.params.channelId)) {
       res.redirect('/');

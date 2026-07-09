@@ -23,6 +23,8 @@ import { EventModel } from '../Calendar/Models/Event';
 import ChannelStateCache from '../Calendar/Services/ChannelStateCache';
 import { html, raw, layout } from './Html';
 import { registerDashboardActions } from './Actions';
+import { runDriftScan, DriftFindings } from './Drift';
+import Logger from '../Bot/Logger';
 
 const MAX_EVENT_ROWS = 100;
 
@@ -190,6 +192,48 @@ export function registerDashboardRoutes(app: express.Express, client: Discord.Cl
         ${raw(optionRows.join(''))}
       </table>
       ${event.active ? raw(html`<form method="get" action="/confirm/delete/${event.shortId}"><button class="danger">Delete event…</button></form>`) : ''}`));
+  });
+
+  // Last scan is kept in memory: single owner, single process, and the
+  // page says when it ran
+  let lastScan: { findings: DriftFindings, at: Date } | null = null;
+
+  app.get('/drift', (req, res) => {
+    let body = html`${raw(flash(req))}<h1>Drift report</h1>
+      <p>Compares the database against Discord: guilds that kicked the bot, deleted channels, vanished Events-tab entries.</p>
+      <form method="post" action="/drift"><button>Run scan</button></form>`;
+
+    if (lastScan !== null) {
+      const ghosts = lastScan.findings.ghostGuilds.map((ghost) => html`
+        <tr><td>${ghost.guildName}</td><td><code>${ghost.guildId}</code></td><td>${ghost.activeEvents}</td>
+        <td><form method="get" action="/confirm/cleanup-ghost/${ghost.guildId}"><button class="danger">Clean up…</button></form></td></tr>`);
+      const dead = lastScan.findings.deadChannels.map((channel) => html`
+        <tr><td><code>${channel.channelId}</code></td><td>${channel.events}</td>
+        <td><form method="post" action="/action/quarantine/${channel.channelId}"><button class="danger">Quarantine</button></form></td></tr>`);
+      const mirrors = lastScan.findings.vanishedMirrors.map((mirror) => html`
+        <tr><td><a href="/event/${mirror.shortId}">${mirror.shortId}</a></td><td><code>${mirror.scheduledEventId}</code></td>
+        <td><form method="post" action="/action/clear-mirror/${mirror.shortId}"><button>Clear reference</button></form></td></tr>`);
+
+      body += html`<p>Last scan: ${lastScan.at.toISOString()} — re-run after cleanups.</p>
+        <h2>Ghost guilds (${lastScan.findings.ghostGuilds.length})</h2>
+        <table><tr><th>Guild</th><th>Id</th><th>Active events</th><th></th></tr>${raw(ghosts.join(''))}</table>
+        <h2>Dead channels (${lastScan.findings.deadChannels.length})</h2>
+        <table><tr><th>Channel id</th><th>Active events</th><th></th></tr>${raw(dead.join(''))}</table>
+        <h2>Vanished native events (${lastScan.findings.vanishedMirrors.length})</h2>
+        <table><tr><th>Event</th><th>Native event id</th><th></th></tr>${raw(mirrors.join(''))}</table>`;
+    }
+
+    res.send(layout('Drift report', body));
+  });
+
+  app.post('/drift', async (req, res) => {
+    try {
+      lastScan = { findings: await runDriftScan(client), at: new Date() };
+      res.redirect('/drift?msg=' + encodeURIComponent('Scan complete'));
+    } catch (err) {
+      Logger.error('Drift scan failed: ' + err.message);
+      res.redirect('/drift?msg=' + encodeURIComponent('Scan refused: ' + err.message));
+    }
   });
 
   registerDashboardActions(app, client);

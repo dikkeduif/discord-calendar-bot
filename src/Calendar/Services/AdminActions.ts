@@ -167,6 +167,17 @@ export default class AdminActions {
   }
 
   /**
+   * Drops a stale scheduledEventId (the native event vanished from
+   * Discord's side) so the mirror stops drifting.
+   */
+  public async clearMirror(shortId: string): Promise<ActionOutcome> {
+    const updated = await EventModel.findOneAndUpdate(
+      { shortId, scheduledEventId: { $exists: true } },
+      { $unset: { scheduledEventId: 1 } });
+    return { status: updated !== null ? 'done' : 'notFound' };
+  }
+
+  /**
    * Shared by detach and quarantine: flip the channel's active events
    * off and best-effort delete their native mirrors. One failing mirror
    * never aborts the loop.

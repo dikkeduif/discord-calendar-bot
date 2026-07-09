@@ -39,6 +39,26 @@ Usually you want to create an #events channel or something similar and make it r
 
 The invite link above also includes the **Manage Events** permission: every bot event is then mirrored as a native Discord scheduled event in your server's Events tab (with Discord's own start notification). This is optional — without the permission the bot works exactly as before, just without the Events-tab entry. Servers that invited the bot earlier can grant **Manage Events** to the bot's role to enable it.
 
+## Owner administration (/admin and the web dashboard)
+
+Set ``OWNER_USER_ID`` (your Discord user id) to unlock the owner-only ``/admin`` command: list every server with event counts, list a server's events, make the bot **leave a server** (its native scheduled events are removed and its bot events closed first), and **detach/reattach channels**. Detaching a channel closes its events and blocks new ones — Discord has no way for a bot to leave just a channel, so this is the honest equivalent; reattaching allows new events again.
+
+The **web dashboard** shows the same picture in a browser (guilds → channels → events → registrations, plus a drift report that finds ghost guilds, dead channels and vanished Events-tab entries) with the same actions. It starts only when all three are set:
+
+```
+OWNER_USER_ID=<your discord user id>
+ADMIN_PORT=8080
+ADMIN_TOKEN=<random secret, 32+ characters, e.g. `openssl rand -hex 32`>
+```
+
+Then map the port in ``docker-compose.yml`` (a commented example is included). Sign in once per browser with the token; **rotating ``ADMIN_TOKEN`` signs every browser out**.
+
+**Exposure tiers — pick deliberately:**
+
+1. **Localhost only (default example)**: keep the mapping on ``127.0.0.1`` and reach it from the box or an SSH tunnel. Safest.
+2. **Phone access (recommended)**: keep the localhost binding and join the machine to a [Tailscale](https://tailscale.com)/WireGuard network; open the dashboard over the tailnet.
+3. **Public internet**: put a TLS reverse proxy (e.g. [Caddy](https://caddyserver.com), 2-line config) in front. **Never expose the raw HTTP port publicly** — the token and cookie would travel in plaintext. Set ``ADMIN_COOKIE_SECURE=false`` only for tier-1 plain-HTTP setups on a trusted LAN.
+
 ## Localization
 
 By default, the bot is in English, I did my best to make it flexible, and you can add your own translations in the file ```src/Dictionaries/CalendarTranslations.ts```.
