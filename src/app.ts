@@ -17,6 +17,8 @@
  */
 import * as Discord from 'discord.js';
 import { Calendar } from './Calendar'
+import DashboardServer from './Dashboard/Server';
+import { registerDashboardRoutes } from './Dashboard/Views';
 import Logger from './Bot/Logger';
 import Settings from './settings';
 import { connect } from './Entities/Mongoose';
@@ -73,6 +75,19 @@ client.on('clientReady', () => {
   calendar.loadChannelStates().catch((err) => {
     Logger.error('Channel state load failed: ' + err.message);
   });
+
+  if (DashboardServer.shouldStart()) {
+    try {
+      dashboard = new DashboardServer();
+      dashboard.registerRoutes((app) => registerDashboardRoutes(app, client));
+      dashboard.start();
+    } catch (err) {
+      // A weak token or bad config must not take the bot down
+      Logger.error('Dashboard not started: ' + err.message);
+    }
+  } else {
+    Logger.info('Dashboard disabled (set ADMIN_PORT, ADMIN_TOKEN and OWNER_USER_ID to enable)');
+  }
 });
 
 client.on('error', (err) => {
@@ -85,6 +100,22 @@ client.on('shardError', (err) => {
 
 const calendar = new Calendar(client);
 calendar.start();
+
+let dashboard: DashboardServer | null = null;
+
+// pm2-runtime signals on every redeploy; close the HTTP side first so
+// in-flight requests drain, then the Discord client
+const shutdown = (signal: string) => {
+  Logger.info('Received ' + signal + ', shutting down');
+  const stopServer = dashboard !== null ? dashboard.stop() : Promise.resolve();
+  stopServer
+    .then(() => client.destroy())
+    .catch((err) => Logger.error('Shutdown error: ' + err.message))
+    .finally(() => process.exit(0));
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 client.on('messageCreate', message => {
   if (!message.author.bot) {

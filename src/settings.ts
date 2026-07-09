@@ -33,6 +33,13 @@ const settings = {
       connection: process.env.MONGODB_CONNECTION_STRING
     },
   },
+  dashboard: {
+    port: process.env.ADMIN_PORT,
+    token: process.env.ADMIN_TOKEN,
+    bind: process.env.ADMIN_BIND,
+    // 'false' only for trusted-LAN plain-HTTP setups; see README tiers
+    secureCookies: process.env.ADMIN_COOKIE_SECURE,
+  },
 };
 
 class Settings {
