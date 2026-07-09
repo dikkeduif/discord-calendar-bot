@@ -30,7 +30,9 @@ enum OptionsType {
 class Event {
   _id?: mongoose.Types.ObjectId;
 
-  @prop()
+  // Button customIds and autocomplete key on this, so collisions are no
+  // longer harmless; creation regenerates on a duplicate-key error
+  @prop({ unique: true })
   public shortId: string;
 
   @prop()
@@ -56,6 +58,12 @@ class Event {
   // without the permission
   @prop()
   public scheduledEventId?: string;
+
+  // 'buttons' for events registered via message components; absent means
+  // a legacy reaction-based event. ReactionHandler must ignore 'buttons'
+  // events, and the prefix-retirement gate queries on this field
+  @prop()
+  public registrationSurface?: string;
 
   @prop()
   public channelId?: string;
@@ -100,15 +108,16 @@ class Event {
   public declineOption: string;
 
   public setDefaultOptions() {
+    // The decline choice is not part of the defaults; setDefaultDecline
+    // appends it last, so decline renders as the final button/column
     this.options = new Map<string, string>();
     this.options.set('✅', 'Yes');
-    this.options.set('❎', 'No');
     this.options.set('❔', 'Maybe');
   }
 
-  public setDefaultDecline() {
+  public setDefaultDecline(label: string = 'N/A') {
     this.declineOption = '❎';
-    this.setOption('❎', 'N/A');
+    this.setOption('❎', label);
   }
 
   public getDefaultDecline() {
@@ -166,6 +175,13 @@ class Event {
     }).sort({ eventDate: 1 }).limit(10);
   }
 
+
+  public static async getUpcomingGuildEvents(this: ReturnModelType<typeof Event>, authorId: string, guildId: string) {
+    // Autocomplete source: guild-scoped (the DM-based getUserEvents below
+    // spans guilds by design), capped at Discord's 25-choice limit
+    return this.find({ authorId, guildId, eventDate: { '$gte': new Date() }, active: true })
+      .sort({ eventDate: 1 }).limit(25);
+  }
 
   public static async getUserEvents(this: ReturnModelType<typeof Event>, authorId: string) {
     // Soonest first: these are the events the user most likely wants to modify
