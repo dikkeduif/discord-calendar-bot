@@ -27,6 +27,7 @@ import Message from '../Classes/Message';
 import DateValidation from '../Validation/DateValidation';
 import EmojiValidation from '../Validation/EmojiValidation';
 import {SessionManager} from '../Classes/SessionManager';
+import ChannelStateCache from '../Services/ChannelStateCache';
 import Logger from '../../Bot/Logger';
 
 class CreateHandler extends AbstractHandler {
@@ -52,6 +53,12 @@ class CreateHandler extends AbstractHandler {
       } else {
         if (message.channel.type !== Discord.ChannelType.GuildText) {
           return event.status;
+        }
+
+        // Detached channels take no new events; end the session cleanly
+        if (ChannelStateCache.isBlocked(message.channel.id)) {
+          await message.author.send(this.dictionary.get('/calendar/creation/channelDetached'));
+          return EventCreationProgress.Exit;
         }
 
         // Check if the bot has permissions
@@ -274,8 +281,14 @@ class CreateHandler extends AbstractHandler {
             msg = this.dictionary.get('/calendar/creation/exit');
             break;
           case EventCreationProgress.Done:
-            msg = this.dictionary.get('/calendar/creation/done');
-            msg = msg.replace(/\{id\}/g, event.shortId);
+            // The post chokepoint deactivates events whose channel was
+            // detached mid-interview; "done, your id is X" would be a lie
+            if (event.active === false) {
+              msg = this.dictionary.get('/calendar/creation/channelDetached');
+            } else {
+              msg = this.dictionary.get('/calendar/creation/done');
+              msg = msg.replace(/\{id\}/g, event.shortId);
+            }
             break;
           case EventCreationProgress.WaitingForFirstTimeUser:
             msg = this.dictionary.get('/calendar/creation/firstTimeUser');

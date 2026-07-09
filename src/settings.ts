@@ -24,12 +24,23 @@ const settings = {
   sessionTimeout: 600,
   environment: process.env.NODE_ENV,
   discord: {
-    token: process.env.DISCORD_TOKEN
+    token: process.env.DISCORD_TOKEN,
+    // Gates /admin and the dashboard; both stay disabled when unset
+    ownerId: process.env.OWNER_USER_ID
   },
   databases: {
     mongoose: {
       connection: process.env.MONGODB_CONNECTION_STRING
     },
+  },
+  dashboard: {
+    port: process.env.ADMIN_PORT,
+    token: process.env.ADMIN_TOKEN,
+    bind: process.env.ADMIN_BIND,
+    // 'false' only for trusted-LAN plain-HTTP setups; see README tiers
+    secureCookies: process.env.ADMIN_COOKIE_SECURE,
+    // 'true' when a TLS reverse proxy fronts the dashboard (tier 3)
+    trustProxy: process.env.ADMIN_TRUST_PROXY,
   },
 };
 

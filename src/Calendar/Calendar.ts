@@ -19,6 +19,8 @@
 import { CalendarCommands} from './Handlers/CalendarCommands';
 import { CalendarReminders} from './Handlers/CalendarReminders';
 import InteractionRouter from './Interactions/InteractionRouter';
+import { ChannelStateModel } from './Models/ChannelState';
+import ChannelStateCache from './Services/ChannelStateCache';
 import * as Discord from 'discord.js';
 import Logger from '../Bot/Logger';
 
@@ -36,6 +38,12 @@ export class Calendar {
 
   public async registerCommands() {
     return this.interactions.registerCommands();
+  }
+
+  public async loadChannelStates() {
+    const states = await ChannelStateModel.getAll();
+    ChannelStateCache.load(states);
+    Logger.info('Loaded ' + states.length + ' channel state record(s)');
   }
 
   public async handleInteraction(interaction: Discord.Interaction) {

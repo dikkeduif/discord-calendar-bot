@@ -26,6 +26,8 @@ import CreateCommand, { CREATE_MODAL_ID, CREATE_RETRY_ID } from './CreateCommand
 import ModifyCommand, { MODIFY_MODAL_NAMESPACE } from './ModifyCommand';
 import DeleteCommand, { DELETE_CONFIRM_NAMESPACE } from './DeleteCommand';
 import TimezoneCommand from './TimezoneCommand';
+import AdminCommand, { ADMIN_BUTTON_NAMESPACE } from './AdminCommand';
+import Settings from '../../settings';
 
 export default class InteractionRouter {
   /**
@@ -49,6 +51,7 @@ export default class InteractionRouter {
   private modifyCommand: ModifyCommand;
   private deleteCommand: DeleteCommand;
   private timezoneCommand: TimezoneCommand;
+  private adminCommand: AdminCommand;
 
   constructor(client: Discord.Client) {
     this.client = client;
@@ -59,6 +62,14 @@ export default class InteractionRouter {
     this.modifyCommand = new ModifyCommand();
     this.deleteCommand = new DeleteCommand();
     this.timezoneCommand = new TimezoneCommand();
+    this.adminCommand = new AdminCommand();
+  }
+
+  // The gate for every /admin dispatch path — execute, autocomplete, and
+  // buttons all arrive independently, and autocomplete would leak guild
+  // names to anyone typing if left unguarded
+  private isOwner(userId: string): boolean {
+    return AdminCommand.isOwner(userId, Settings.get('/discord/ownerId'));
   }
 
   /**
@@ -130,6 +141,18 @@ export default class InteractionRouter {
       return;
     }
 
+    if (interaction.commandName === 'admin') {
+      if (!this.isOwner(interaction.user.id)) {
+        await interaction.reply({
+          content: this.dictionary.get('/calendar/interaction/adminNotOwner'),
+          flags: Discord.MessageFlags.Ephemeral,
+        });
+        return;
+      }
+      await this.adminCommand.execute(interaction);
+      return;
+    }
+
     Logger.debug('Unrouted chat command: ' + interaction.commandName);
     await this.replyWithError(interaction);
   }
@@ -144,6 +167,10 @@ export default class InteractionRouter {
       }
       if (interaction.commandName === 'timezone') {
         await this.timezoneCommand.autocomplete(interaction);
+        return;
+      }
+      if (interaction.commandName === 'admin' && this.isOwner(interaction.user.id)) {
+        await this.adminCommand.autocomplete(interaction);
         return;
       }
       await interaction.respond([]);
@@ -181,6 +208,18 @@ export default class InteractionRouter {
 
     if (namespace === DELETE_CONFIRM_NAMESPACE) {
       await this.deleteCommand.handleConfirm(interaction);
+      return;
+    }
+
+    if (namespace === ADMIN_BUTTON_NAMESPACE) {
+      if (!this.isOwner(interaction.user.id)) {
+        await interaction.reply({
+          content: this.dictionary.get('/calendar/interaction/adminNotOwner'),
+          flags: Discord.MessageFlags.Ephemeral,
+        });
+        return;
+      }
+      await this.adminCommand.handleButton(interaction);
       return;
     }
 

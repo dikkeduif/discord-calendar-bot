@@ -19,6 +19,8 @@
 import * as Discord from 'discord.js';
 import { Dictionary, CalendarTranslations } from '../../Dictionaries';
 import { Event, EventModel } from '../Models/Event';
+import AdminActions from '../Services/AdminActions';
+import ChannelStateCache from '../Services/ChannelStateCache';
 import moment_tz from 'moment-timezone';
 import Logger from '../../Bot/Logger';
 
@@ -76,21 +78,29 @@ export class CalendarReminders {
         // One failing event must not block the rest of the batch
         Logger.error('Reminder failed for event ' + event.shortId + ': ' + err.message, { shortId: event.shortId });
 
-        // The channel is gone for good: retire every event that points at it
+        // The channel is gone for good: quarantine it — records the state,
+        // retires every event that points at it, and cleans their native
+        // mirrors (which used to linger in the Events tab)
         if (err instanceof Discord.DiscordAPIError && err.code === Discord.RESTJSONErrorCodes.UnknownChannel) {
           deadChannels.add(event.channelId);
-          const result = await EventModel.updateMany(
-            { channelId: event.channelId, active: true },
-            { active: false }
-          );
+          const outcome = await new AdminActions(this.client).quarantineChannel(event.channelId, event.guildId);
           Logger.info('Channel ' + event.channelId + ' no longer exists, deactivated '
-            + result.modifiedCount + ' event(s)', { channelId: event.channelId });
+            + (outcome.deactivated ?? 0) + ' event(s)', { channelId: event.channelId });
         }
       }
     }
   }
 
   private async sendReminder(event: Event) {
+    // Race safety net: detached events are already inactive, but a tick
+    // loaded before the detach landed must not ping the channel. Heal
+    // the blocked-but-active state (a detach whose deactivation failed
+    // mid-way) so such events cannot occupy the batch window forever
+    if (ChannelStateCache.isBlocked(event.channelId)) {
+      await EventModel.updateMany({ channelId: event.channelId, active: true }, { active: false });
+      return;
+    }
+
     const channel = await this.client.channels.fetch(event.channelId);
 
     const userIds = [];

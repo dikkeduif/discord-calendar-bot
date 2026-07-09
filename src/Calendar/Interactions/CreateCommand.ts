@@ -25,6 +25,7 @@ import DateValidation from '../Validation/DateValidation';
 import OptionsFieldParser, { ParseResult } from './OptionsFieldParser';
 import SessionType from '../Enums/SessionType';
 import EventCreationProgress from '../Enums/EventCreationProgress';
+import ChannelStateCache from '../Services/ChannelStateCache';
 import Settings from '../../settings';
 import { Dictionary, CalendarTranslations } from '../../Dictionaries';
 
@@ -69,6 +70,14 @@ export default class CreateCommand {
     if (!channel || channel.type !== Discord.ChannelType.GuildText) {
       await interaction.reply({
         content: this.dictionary.get('/calendar/interaction/wrongChannel'),
+        flags: Discord.MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    if (ChannelStateCache.isBlocked(interaction.channelId)) {
+      await interaction.reply({
+        content: this.dictionary.get('/calendar/interaction/channelDetached'),
         flags: Discord.MessageFlags.Ephemeral,
       });
       return;
@@ -134,6 +143,15 @@ export default class CreateCommand {
     };
 
     const key = this.draftKey(interaction);
+
+    // The channel can be detached while the modal sits open; reject with
+    // the input echoed so nothing is lost (no retry — it would fail too)
+    if (ChannelStateCache.isBlocked(interaction.channelId)) {
+      await interaction.editReply({
+        content: this.dictionary.get('/calendar/interaction/channelDetached') + '\n\n' + this.echoValues(values),
+      });
+      return;
+    }
 
     const user = await UserModel.getUserByUserAndGuildId(interaction.user.id, interaction.guildId);
     const timezone = user !== null && user.userTimeZone ? user.userTimeZone : Settings.get('/defaultTimeZone');

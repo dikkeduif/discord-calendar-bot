@@ -23,6 +23,7 @@ import Logger from '../../Bot/Logger';
 import ScheduledEvent from './ScheduledEvent';
 import RegistrationRenderer from './RegistrationRenderer';
 import RegistrationButtonHandler from '../Interactions/RegistrationButtonHandler';
+import ChannelStateCache from '../Services/ChannelStateCache';
 
 export default class Message {
   private messageId: string;
@@ -41,6 +42,16 @@ export default class Message {
     let description = event.description;
     // 20201213T230000
     description += '\n\n**Time**\n' + '<t:' + newDateServer + ':F> (<t:' + newDateServer + ':R>)';
+
+    // Hard safety net for every creation surface (slash, legacy
+    // interview, retry drafts): detached channels never get a post. The
+    // surfaces give their own friendlier rejections earlier; deactivate
+    // here so no ghost event survives the race
+    if (ChannelStateCache.isBlocked(event.channelId)) {
+      event.active = false;
+      Logger.info('Blocked event post into detached channel', { channelId: event.channelId, shortId: event.shortId });
+      return;
+    }
 
     // Every new event registers via buttons, whichever surface created
     // it; the legacy reaction path only serves messages posted before this
@@ -121,6 +132,12 @@ export default class Message {
       channel = await this.client.channels.fetch(event.channelId) as Discord.TextChannel;
     } catch (exc) {
       Logger.error('Unable to delete an event', { event, exception: exc });
+      // The channel may be gone while the guild is not: the native
+      // mirror is guild-scoped and must not outlive the event
+      const guild = event.guildId ? this.client.guilds.cache.get(event.guildId) : undefined;
+      if (guild !== undefined) {
+        await new ScheduledEvent().delete(event, guild);
+      }
       return;
     }
 
@@ -133,6 +150,6 @@ export default class Message {
       Logger.error('Unable to delete the event message', { event, exception: exc });
     }
 
-    await new ScheduledEvent().delete(event, channel);
+    await new ScheduledEvent().delete(event, channel.guild);
   }
 }

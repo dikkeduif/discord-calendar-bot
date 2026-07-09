@@ -6,6 +6,17 @@ services:
       - NODE_ENV
       - DISCORD_TOKEN
       - MONGODB_CONNECTION_STRING
+      - OWNER_USER_ID
+      - ADMIN_PORT
+      - ADMIN_TOKEN
+      - ADMIN_BIND
+      - ADMIN_COOKIE_SECURE
+      - ADMIN_TRUST_PROXY
+    # Dashboard (optional): set ADMIN_PORT + ADMIN_TOKEN + OWNER_USER_ID
+    # and map the port. Keep 127.0.0.1 unless you run TLS in front —
+    # see the README's exposure tiers.
+    # ports:
+    #   - "127.0.0.1:8080:8080"
     depends_on:
       - mongo
   mongo:
