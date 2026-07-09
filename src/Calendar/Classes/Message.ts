@@ -53,13 +53,15 @@ export default class Message {
       .setTimestamp()
       .setFooter({ text: 'created by ' + event.authorName + ', your event id is [ ' + event.shortId + ' ]' });
 
-    if (event.hasOptions()) {
-      // Empty columns render at post time so the embed shape is stable
-      // from the first click onwards
-      embed.setFields(RegistrationRenderer.buildFields(event.options, new Map()));
-    }
-
     try {
+      if (event.hasOptions()) {
+        // Empty columns render at post time so the embed shape is stable
+        // from the first click onwards. Inside the try: EmbedBuilder
+        // validates eagerly, and callers rely on post failures being
+        // contained here
+        embed.setFields(RegistrationRenderer.buildFields(event.options, new Map()));
+      }
+
       const channel = await this.client.channels.fetch(event.channelId) as Discord.TextChannel;
       const result: Discord.Message = await channel.send({
         embeds: [embed],
@@ -82,6 +84,7 @@ export default class Message {
 
       const message = await channel.messages.fetch(event.messageId);
       const embed = message.embeds[0];
+      let edited = false;
 
       if (embed) {
         const newDateServer = moment_tz(event.eventDate).unix();
@@ -98,10 +101,14 @@ export default class Message {
           .setFooter({ text: 'created by ' + event.authorName + ', your event id is [ ' + event.shortId + ' ]' });
 
         await message.edit({ embeds: [rebuilt] });
-
-        await new ScheduledEvent().update(event, channel);
+        edited = true;
       }
-      return true;
+
+      // The native mirror follows the DB, not the embed: a suppressed
+      // embed must not leave the Events-tab entry stale
+      await new ScheduledEvent().update(event, channel);
+
+      return edited;
     } catch (exc) {
       Logger.error('Unable to edit an event', { event, exception: exc });
       return false;

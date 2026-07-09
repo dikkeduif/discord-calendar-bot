@@ -49,6 +49,18 @@ describe('RegistrationRenderer.buildFields', () => {
     assert.equal(fields[2].value, '-');
   });
 
+  it('clamps legacy-interview excess to the embed limits instead of throwing', () => {
+    const oversized = new Map<string, string>();
+    for (let i = 0; i < 30; i++) {
+      oversized.set('key' + i, i === 0 ? 'x'.repeat(300) : 'Label ' + i);
+    }
+
+    const fields = RegistrationRenderer.buildFields(oversized, new Map());
+
+    assert.equal(fields.length, 25);
+    assert.equal(fields[0].name.length, 256);
+  });
+
   it('tolerates nickname lists for options that no longer exist', () => {
     const nicknames = new Map<string, string[]>([
       ['👻', ['ghost']],

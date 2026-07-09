@@ -262,8 +262,11 @@ export default class CreateCommand {
         .setLabel(this.dictionary.get('/calendar/interaction/retryLabel'))
         .setStyle(Discord.ButtonStyle.Primary));
 
+    // Hard content cap is 2000; an oversized reply would reject and take
+    // the retry button down with it
+    const content = message + '\n\n' + this.echoValues(values);
     await interaction.editReply({
-      content: message + '\n\n' + this.echoValues(values),
+      content: content.length > 1990 ? content.slice(0, 1990) + '…' : content,
       components: [retryRow],
     });
   }
@@ -288,7 +291,9 @@ export default class CreateCommand {
       declineCollision: '/calendar/interaction/optionsDeclineCollision',
       tooMany: '/calendar/interaction/optionsTooMany',
     };
-    return this.dictionary.get(keyByReason[parsed.reason]).replace('{line}', parsed.line);
+    // The offending line can be as long as the whole options field
+    const line = parsed.line.length > 120 ? parsed.line.slice(0, 120) + '…' : parsed.line;
+    return this.dictionary.get(keyByReason[parsed.reason]).replace('{line}', line);
   }
 
   private draftKey(interaction: Discord.Interaction): string {

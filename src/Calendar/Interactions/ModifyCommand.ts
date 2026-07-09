@@ -86,9 +86,18 @@ export default class ModifyCommand {
       const events = await EventModel.getUpcomingGuildEvents(interaction.user.id, interaction.guildId);
       const focused = interaction.options.getFocused().toLowerCase();
 
-      choices = events
-        .map((event) => ({ name: ModifyCommand.formatChoiceName(event), value: event.shortId }))
-        .filter((choice) => focused.length === 0 || choice.name.toLowerCase().includes(focused));
+      for (const event of events) {
+        // One legacy doc with a broken timezone must not empty the whole
+        // suggestion list
+        try {
+          const name = ModifyCommand.formatChoiceName(event);
+          if (focused.length === 0 || name.toLowerCase().includes(focused)) {
+            choices.push({ name, value: event.shortId });
+          }
+        } catch (err) {
+          Logger.error('Skipping unformattable event ' + event.shortId + ': ' + err.message);
+        }
+      }
     } catch (err) {
       Logger.error('Event autocomplete failed: ' + err.message);
     }

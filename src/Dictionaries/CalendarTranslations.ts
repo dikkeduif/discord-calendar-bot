@@ -74,6 +74,7 @@ const CalendarTranslations = {
       'en': {
         error: 'Something went wrong while handling that. Please try again.',
         registrationClosed: 'Registration for this event is closed.',
+        registrationPending: 'This event was just posted and isn\'t ready yet — click again in a few seconds.',
         modalTitle: 'Create an event',
         fieldTitle: 'Title',
         fieldDescription: 'Description',

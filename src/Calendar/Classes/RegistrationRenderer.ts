@@ -35,11 +35,19 @@ export default class RegistrationRenderer {
     const fields: Discord.APIEmbedField[] = [];
 
     for (const [key, label] of options) {
+      // Embed hard limits — EmbedBuilder validates eagerly and would
+      // throw. The slash parser prevents both, but legacy-interview
+      // events carry unbounded labels and option counts
+      if (fields.length === 25) {
+        break;
+      }
+      const name = (label + ' (' + key + ') ' + '\n').slice(0, 256);
+
       const nicknames = nicknamesByOption.get(key);
       if (nicknames !== undefined && nicknames.length !== 0) {
-        fields.push({ name: label + ' (' + key + ') ' + '\n', value: '>>> ' + nicknames.join('\n'), inline: true });
+        fields.push({ name, value: '>>> ' + nicknames.join('\n'), inline: true });
       } else {
-        fields.push({ name: label + ' (' + key + ') ' + '\n', value: '-', inline: true });
+        fields.push({ name, value: '-', inline: true });
       }
     }
 

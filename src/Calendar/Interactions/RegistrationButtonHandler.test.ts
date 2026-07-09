@@ -61,6 +61,13 @@ describe('RegistrationButtonHandler.buildButtonRows', () => {
     assert.equal(RegistrationButtonHandler.buildButtonRows(makeEvent(25)).length, 5);
   });
 
+  it('caps legacy-interview excess at the 25-button message limit', () => {
+    const rows = RegistrationButtonHandler.buildButtonRows(makeEvent(30));
+
+    assert.equal(rows.length, 5);
+    assert.equal(rows.reduce((sum, row) => sum + row.components.length, 0), 25);
+  });
+
   it('returns no rows for events without options', () => {
     const event = new Event();
     event.shortId = 'abc123';

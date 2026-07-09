@@ -61,6 +61,12 @@ export default class RegistrationButtonHandler {
     let index = 0;
 
     for (const [key, label] of event.options) {
+      // Messages cap at 25 buttons; the slash parser prevents this, but
+      // the legacy interview never bounded the option count
+      if (index === 25) {
+        break;
+      }
+
       const isDecline = key === event.declineOption;
       const text = (label ?? '').trim();
 
@@ -126,7 +132,25 @@ export default class RegistrationButtonHandler {
 
     const event = await EventModel.getByMessageId(interaction.message.id);
 
-    if (event === null || !event.active || (event.eventDate && event.eventDate.getTime() < Date.now())) {
+    if (event === null) {
+      // Both create flows post the message before the record is findable
+      // by messageId (save→post→patch, and the legacy interview persists
+      // on session finish). A click in that window must not brick the
+      // buttons, so a missing record never disables components — only an
+      // authoritative record (below) may do that
+      const messageAgeMs = Date.now() - interaction.message.createdTimestamp;
+      const contentKey = messageAgeMs < 60 * 1000
+        ? '/calendar/interaction/registrationPending'
+        : '/calendar/interaction/registrationClosed';
+      await interaction.followUp({
+        content: this.dictionary.get(contentKey),
+        flags: Discord.MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    if (!event.active || (event.eventDate && event.eventDate.getTime() < Date.now())) {
+      // The record is authoritative here, so greying the buttons is safe
       await this.closeRegistration(interaction);
       return;
     }
