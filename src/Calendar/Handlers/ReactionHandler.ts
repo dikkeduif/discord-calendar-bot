@@ -22,6 +22,7 @@ import Settings from '../../settings';
 import EmojiValidation from '../Validation/EmojiValidation';
 import Logger from '../../Bot/Logger';
 import { Dictionary, CalendarTranslations } from '../../Dictionaries';
+import RegistrationRenderer from '../Classes/RegistrationRenderer';
 
 export default class ReactionHandler {
   private client: Discord.Client
@@ -38,10 +39,13 @@ export default class ReactionHandler {
 
     if (event === null) {
       // Only guild messages with an embed can be events; reactions on
-      // bot DMs or plain-text bot messages are not ours to resurrect
+      // bot DMs or plain-text bot messages are not ours to resurrect.
+      // Messages with components are button-era events — they were never
+      // reaction-registered, so there is nothing to resurrect from
       if (reaction.message.author.id === this.client.user.id
         && reaction.message.guild !== null
-        && reaction.message.embeds.length > 0) {
+        && reaction.message.embeds.length > 0
+        && reaction.message.components.length === 0) {
         Logger.error('An event had to recreated in the DB');
         const message = reaction.message;
         const myEmbed = reaction.message.embeds[0];
@@ -82,6 +86,12 @@ export default class ReactionHandler {
 
         await EventModel.create(newEvent);
       }
+      return 0;
+    }
+
+    // Button-era events register via components; a manual reaction on one
+    // must not trigger removal attempts, author DMs, or a legacy rebuild
+    if (event.registrationSurface === 'buttons') {
       return 0;
     }
 
@@ -137,69 +147,7 @@ export default class ReactionHandler {
       event.registrations.set(user.id.toString(), emojiName);
     }
 
-    const columns = [];
-    const registrations = [];
-
-    // Prepare the columns output
-    for (const [key, value] of event.options) {
-      columns[key] = value + ' (' + key + ') ' + '\n';
-      registrations[key] = [];
-    }
-
-    // Key is the userid, value is the option they picked
-    for (const [key, value] of event.registrations) {
-      let registeredUser = this.client.users.cache.get(key);
-
-      try {
-        if (registeredUser === undefined) {
-          registeredUser = await this.client.users.fetch(key);
-        }
-
-        if (registeredUser.partial) {
-          await registeredUser.fetch();
-        }
-      } catch (exception) {
-        // A deleted account must not block the embed rebuild for everyone else
-        Logger.error('Skipping unresolvable registered user ' + key + ': ' + exception.message);
-        continue;
-      }
-
-      let guildMember = null;
-      if (reaction.message.guild !== null) {
-        guildMember = reaction.message.guild.members.cache.get(registeredUser.id) ?? null;
-        if (guildMember === null) {
-          try {
-            guildMember = await reaction.message.guild.members.fetch(registeredUser);
-          } catch (exception) {
-            guildMember = null;
-            Logger.error(exception);
-          }
-        }
-      }
-
-      let nickname: string;
-      if (guildMember === null || guildMember.nickname === null) {
-        nickname = registeredUser.username;
-      } else {
-        if (guildMember.nickname.length > 0) {
-          nickname = guildMember.nickname;
-        } else {
-          nickname = registeredUser.username;
-        }
-      }
-
-      registrations[value].push(nickname);
-    }
-
-    const fields: Discord.APIEmbedField[] = [];
-    for (const key of Object.keys(columns)) {
-      const value = columns[key];
-      if (registrations[key].length !== 0) {
-        fields.push({ name: value, value: '>>> ' + registrations[key].join('\n'), inline: true });
-      } else {
-        fields.push({ name: value, value: '-', inline: true });
-      }
-    }
+    const fields = await RegistrationRenderer.renderFields(this.client, reaction.message.guild, event);
 
     // Received embeds are read-only data in v14. Rebuild with setFields:
     // from() copies the existing fields, so addFields would duplicate the

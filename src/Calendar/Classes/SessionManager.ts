@@ -70,7 +70,17 @@ export class SessionManager {
       // sessions would become active ghost events, and modify sessions hold
       // an already-persisted document that create() must never re-save
       if (session.sessionType === SessionType.CREATE && session.status === EventCreationProgress.Done) {
-        await EventModel.create(session);
+        try {
+          await EventModel.create(session);
+        } catch (err) {
+          // shortId is unique-indexed; losing the event silently would be
+          // worse than an id that differs from the one already DM'd
+          if (err.code !== 11000) {
+            throw err;
+          }
+          session.shortId = this.nanoid();
+          await EventModel.create(session);
+        }
       }
       this.sessions.delete(userId);
     }

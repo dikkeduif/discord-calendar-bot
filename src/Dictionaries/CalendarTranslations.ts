@@ -69,6 +69,56 @@ const CalendarTranslations = {
         exiting: 'Exiting'
       }
     },
+    interaction: {
+      $filter: 'lang',
+      'en': {
+        error: 'Something went wrong while handling that. Please try again.',
+        registrationClosed: 'Registration for this event is closed.',
+        registrationPending: 'This event was just posted and isn\'t ready yet — click again in a few seconds.',
+        modalTitle: 'Create an event',
+        fieldTitle: 'Title',
+        fieldDescription: 'Description',
+        fieldDate: 'Date (DD-MM-YYYY)',
+        fieldTime: 'Time (HH:MM)',
+        fieldOptions: 'Registration options',
+        fieldOptionsHint: 'One "emoji label" per line. Leave blank for ✅ Yes / ❔ Maybe.',
+        wrongChannel: 'Use this command in a regular text channel — that\'s where I can post and remind.',
+        noBotPermissions: 'I can\'t post here — I need the **View Channel**, **Send Messages** and **Embed Links** permissions in this channel.',
+        noUserPermissions: 'You need permission to send messages in this channel to create an event here.',
+        created: 'Your event is posted! The id is **{id}** — use ``/event modify`` to change it or set a reminder.',
+        timezoneNotice: 'I read your date and time as **{timezone}**. Use ``/timezone set`` to change how I read them.',
+        postFailed: 'I couldn\'t post the event in this channel, so nothing was created. Check my permissions here and try again.',
+        retryLabel: 'Try again',
+        retryExpired: 'Your input expired — run ``/event create`` again. Your values are echoed above for copy/paste.',
+        declineLabel: 'No',
+        yourInput: 'Your input:',
+        optionsInvalidEmoji: 'I don\'t recognize the emoji in ``{line}`` — use a standard emoji, a ``:shortcode:``, or a custom emoji from a server I\'m in.',
+        optionsMissingLabel: 'Add a label after the emoji in ``{line}``.',
+        optionsLabelTooLong: 'The label in ``{line}`` is over 80 characters.',
+        optionsDuplicate: 'The emoji in ``{line}`` is used more than once.',
+        optionsDeclineCollision: '❎ is reserved for the decline button — pick another emoji in ``{line}``.',
+        optionsTooMany: 'Events support at most 24 options.',
+        modifyModalTitle: 'Modify your event',
+        fieldDateHint: 'Interpreted in {timezone} — change yours with /timezone set',
+        fieldReminder: 'Reminder (minutes before start)',
+        fieldReminderHint: 'Leave blank to keep the current setting, 0 to turn the reminder off.',
+        eventGone: 'That event doesn\'t exist anymore — pick one from the list ``/event modify`` suggests.',
+        reminderInvalid: 'The reminder must be a whole number of minutes, e.g. ``30``, or ``0`` to turn it off.',
+        modifyUpdated: 'Your event is updated.',
+        modifyMessageGone: 'I saved your changes, but the event message seems to be gone from the channel. Use ``/event delete`` to clean the event up, or ``/event create`` to start fresh.',
+        deleteConfirm: 'Delete **{title}**? This removes the event message and its registrations.',
+        deleteConfirmLabel: 'Delete event',
+        deleteDone: '**{title}** is deleted.',
+        deleteAlready: 'That event was already deleted.',
+        timezoneSet: 'Your timezone here is now **{zone}** (was {previous}). I\'ll use it to read the dates and times you type.',
+      },
+    },
+    scheduledEvent: {
+      $filter: 'lang',
+      'en': {
+        signupHint: 'Sign up via the reactions on the event message in #{channel}. Marking yourself interested here does not register you.',
+      },
+    },
     reminder: {
       $filter: 'lang',
       'en': {
@@ -79,7 +129,8 @@ const CalendarTranslations = {
       $filter: 'lang',
       'en': {
         noEvent: 'There is currently no event active for editing, start a new event with **!event** in the channel of your choice or type **!help** here to get an overview of commands',
-        help: 'You can create a new event by typing ``!event`` in the channel of your choice. The event will be created in that channel.\n\nTo modify your event type ``!modify`` in a **direct message** to me.',
+        help: '**Creating events**\nUse ``/event create`` in the channel where the event should live — a form opens for the title, description, date, time and registration options. People sign up with the buttons under the event.\n\n**Managing events**\n``/event modify`` changes one of your upcoming events (including its reminder), ``/event delete`` removes one. ``/timezone set`` controls how I read the dates and times you type.\n\nThe old ``!`` commands still work for now, but they are retiring soon.',
+        deprecationNudge: '💡 The ``!`` commands are retiring soon — use ``/event create`` in your server instead. If you don\'t see the slash commands there, a server admin needs to re-authorize the bot with the invite link from the README.',
         sessionEnd: 'We closed your session, you can type ``!help`` to get a list of commands.'
       }
     }

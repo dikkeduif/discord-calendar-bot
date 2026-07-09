@@ -65,6 +65,10 @@ const client = new Discord.Client({
 client.on('clientReady', () => {
   Logger.info('Discord client connected');
   Logger.info(`Found environment ${Settings.get('/environment')}`);
+
+  calendar.registerCommands().catch((err) => {
+    Logger.error('Slash command registration failed: ' + err.message);
+  });
 });
 
 client.on('error', (err) => {
@@ -106,6 +110,12 @@ client.on('messageReactionRemove', (reaction, user) => {
       Logger.error('Reaction-remove handler failed', { stack: err.stack });
     });
   }
+});
+
+client.on('interactionCreate', (interaction) => {
+  calendar.handleInteraction(interaction).catch((err) => {
+    Logger.error('Interaction handler failed', { stack: err.stack });
+  });
 });
 
 client.login(Settings.get('/discord/token')).then((res) => {
