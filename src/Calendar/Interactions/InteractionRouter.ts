@@ -22,6 +22,7 @@ import { Dictionary, CalendarTranslations } from '../../Dictionaries';
 import { buildCommandDefinitions } from './CommandDefinitions';
 import HelpCommand from './HelpCommand';
 import RegistrationButtonHandler from './RegistrationButtonHandler';
+import CreateCommand, { CREATE_MODAL_ID, CREATE_RETRY_ID } from './CreateCommand';
 
 export default class InteractionRouter {
   /**
@@ -41,12 +42,14 @@ export default class InteractionRouter {
   private dictionary: Dictionary;
   private helpCommand: HelpCommand;
   private registrationButtons: RegistrationButtonHandler;
+  private createCommand: CreateCommand;
 
   constructor(client: Discord.Client) {
     this.client = client;
     this.dictionary = new Dictionary(CalendarTranslations);
     this.helpCommand = new HelpCommand();
     this.registrationButtons = new RegistrationButtonHandler();
+    this.createCommand = new CreateCommand();
   }
 
   /**
@@ -97,7 +100,12 @@ export default class InteractionRouter {
       return;
     }
 
-    // The event and timezone handlers join in later units of this release
+    if (interaction.commandName === 'event' && interaction.options.getSubcommand() === 'create') {
+      await this.createCommand.execute(interaction);
+      return;
+    }
+
+    // The remaining handlers join in later units of this release
     await this.replyWithError(interaction);
   }
 
@@ -112,8 +120,12 @@ export default class InteractionRouter {
   }
 
   private async routeModalSubmit(interaction: Discord.ModalSubmitInteraction) {
-    const namespace = InteractionRouter.matchNamespace(interaction.customId);
-    Logger.debug('Unrouted modal submit: ' + namespace);
+    if (interaction.customId === CREATE_MODAL_ID) {
+      await this.createCommand.handleModalSubmit(interaction);
+      return;
+    }
+
+    Logger.debug('Unrouted modal submit: ' + interaction.customId);
   }
 
   private async routeButton(interaction: Discord.ButtonInteraction) {
@@ -121,6 +133,11 @@ export default class InteractionRouter {
 
     if (namespace === 'ev:reg') {
       await this.registrationButtons.execute(interaction);
+      return;
+    }
+
+    if (interaction.customId === CREATE_RETRY_ID) {
+      await this.createCommand.handleRetry(interaction);
       return;
     }
 
