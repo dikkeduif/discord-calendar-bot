@@ -57,6 +57,20 @@ describe('OptionsFieldParser', () => {
     assert.ok((result as any).options.has('🍕'));
   });
 
+  it('resolves Discord picker names that node-emoji lacks', () => {
+    const result = parse(':french_bread: F1 Mirage');
+
+    assert.equal(result.ok, true);
+    assert.ok((result as any).options.has('🥖'));
+  });
+
+  it('resolves Discord picker names case-insensitively', () => {
+    const result = parse(':French_Bread: F1 Mirage');
+
+    assert.equal(result.ok, true);
+    assert.ok((result as any).options.has('🥖'));
+  });
+
   it('accepts custom emoji the bot can see', () => {
     const result = parse('<a:party:123456789> Party');
 

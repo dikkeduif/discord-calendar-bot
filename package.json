@@ -20,6 +20,7 @@
     "@typegoose/typegoose": "^10.6.0",
     "confidence": "^5.0.1",
     "cookie-parser": "^1.4.7",
+    "discord-emoji": "^2.5.3",
     "discord.js": "^14.26.4",
     "express": "^5.2.1",
     "moment-timezone": "^0.6.2",

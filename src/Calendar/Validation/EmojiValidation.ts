@@ -18,6 +18,7 @@
 
 import * as Discord from 'discord.js';
 import * as Emoji from 'node-emoji';
+import DiscordEmojiNames from './DiscordEmojiNames';
 
 export default class EmojiValidation {
   static isValidEmoji(emojiStr: string, client: Discord.Client) {
@@ -37,7 +38,11 @@ export default class EmojiValidation {
       if (Emoji.has(cleanedEmoji)) {
         return cleanedEmoji;
       } else {
-        return false;
+        // Discord's picker teaches names node-emoji doesn't know
+        // (:french_bread: vs baguette_bread); resolve those straight to
+        // the unicode character
+        const fromDiscordName = DiscordEmojiNames.resolve(cleanedEmoji);
+        return fromDiscordName !== undefined ? fromDiscordName : false;
       }
     }
   }
