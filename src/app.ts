@@ -56,6 +56,9 @@ const client = new Discord.Client({
     // fails with DisallowedIntents
     Discord.GatewayIntentBits.MessageContent,
     Discord.GatewayIntentBits.GuildMessageReactions,
+    // Keeps the custom-emoji cache current after startup; without it,
+    // emoji added while running are invisible until restart
+    Discord.GatewayIntentBits.GuildExpressions,
     Discord.GatewayIntentBits.DirectMessages,
   ],
   partials: [Discord.Partials.Message, Discord.Partials.Channel, Discord.Partials.Reaction],
