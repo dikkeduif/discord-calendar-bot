@@ -108,6 +108,19 @@ describe('RegistrationButtonHandler.buildButtonRows', () => {
     assert.equal(buttons[3].label, 'Unresolvable');
   });
 
+  it('keeps keycap and flag emoji that the pictographic test misses', () => {
+    const event = new Event();
+    event.shortId = 'abc123';
+    event.setOption('1️⃣', 'Keycap');
+    event.setOption('🇧🇪', 'Flag');
+
+    const rows = RegistrationButtonHandler.buildButtonRows(event);
+    const buttons = rows[0].components.map((b) => b.toJSON() as any);
+
+    assert.equal(buttons[0].emoji.name, '1️⃣');
+    assert.equal(buttons[1].emoji.name, '🇧🇪');
+  });
+
   it('truncates labels to the 80-char button limit', () => {
     const event = new Event();
     event.shortId = 'abc123';

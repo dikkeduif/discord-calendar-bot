@@ -110,7 +110,11 @@ export default class RegistrationButtonHandler {
       return { name: key };
     }
     if (Emoji.has(key)) {
-      return { name: Emoji.get(key) };
+      // get() only resolves shortcode names; for emoji characters that
+      // slip past the pictographic test (keycaps 1️⃣, flags 🇧🇪) it
+      // returns undefined, and an empty emoji object 400s the whole
+      // message — has() vouched for the key, so send it as-is
+      return { name: Emoji.get(key) ?? key };
     }
     return null;
   }
